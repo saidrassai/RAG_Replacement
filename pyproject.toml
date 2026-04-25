@@ -1,0 +1,116 @@
+[project]
+name = "lattice-jit-workspace"
+version = "0.1.0"
+description = "Lattice-JIT Compiler v3.1 modular workspace"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "fakeredis>=2.31.0",
+  "httpx>=0.28.1",
+  "mypy>=1.18.2",
+  "pytest>=8.4.2",
+  "pytest-cov>=7.0.0",
+  "ruff>=0.14.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.uv.workspace]
+members = [
+  "apps/api",
+  "apps/cli",
+  "apps/worker",
+  "packages/contracts",
+  "packages/core",
+  "packages/connectors/git_local",
+  "packages/lattice",
+  "packages/runtime",
+  "packages/governance",
+  "packages/policy",
+  "packages/storage",
+  "packages/model_proxy",
+]
+
+[tool.uv.sources]
+lattice-jit-api = { workspace = true }
+lattice-jit-cli = { workspace = true }
+lattice-jit-worker = { workspace = true }
+lattice-jit-contracts = { workspace = true }
+lattice-jit-core = { workspace = true }
+lattice-jit-connector-git-local = { workspace = true }
+lattice-jit-lattice = { workspace = true }
+lattice-jit-runtime = { workspace = true }
+lattice-jit-governance = { workspace = true }
+lattice-jit-policy = { workspace = true }
+lattice-jit-storage = { workspace = true }
+lattice-jit-model-proxy = { workspace = true }
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "B",
+  "UP",
+]
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.12"
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = [
+  "apps/api/src",
+  "apps/cli/src",
+  "apps/worker/src",
+  "packages/contracts/src",
+  "packages/core/src",
+  "packages/connectors/git_local/src",
+  "packages/lattice/src",
+  "packages/runtime/src",
+  "packages/governance/src",
+  "packages/policy/src",
+  "packages/storage/src",
+  "packages/model_proxy/src",
+]
+files = [
+  "apps/api/src/lattice_jit/apps/api",
+  "apps/cli/src/lattice_jit/apps/cli",
+  "apps/worker/src/lattice_jit/apps/worker",
+  "packages/contracts/src/lattice_jit/contracts",
+  "packages/core/src/lattice_jit/core",
+  "packages/connectors/git_local/src/lattice_jit/connectors/git_local",
+  "packages/lattice/src/lattice_jit/lattice",
+  "packages/runtime/src/lattice_jit/runtime",
+  "packages/governance/src/lattice_jit/governance",
+  "packages/policy/src/lattice_jit/policy",
+  "packages/storage/src/lattice_jit/storage",
+  "packages/model_proxy/src/lattice_jit/model_proxy",
+  "tests",
+]
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_optional = true
+exclude = [
+  "ops",
+]
+
+[[tool.mypy.overrides]]
+module = [
+  "celery",
+  "celery.*",
+  "litellm",
+]
+ignore_missing_imports = true
