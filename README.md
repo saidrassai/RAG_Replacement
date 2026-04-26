@@ -20,3 +20,13 @@ Python-first modular monorepo scaffold for the first vertical slice of the Latti
    - `docker compose -f ops/docker/docker-compose.yml up --build`
 4. Run tests:
    - `uv run --all-packages pytest`
+
+## Quick start verification
+
+Run the automated verifier to confirm README quick-start steps stay executable and in sync:
+
+- `bash ops/scripts/verify_readme_quickstart.sh`
+
+To validate README command mapping only (no docker/test execution):
+
+- `bash ops/scripts/verify_readme_quickstart.sh --readme-only`

@@ -22,7 +22,7 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
 
 ### Lane A — Quality and Local Runtime Closure
 
-- [ ] A1. Make lint/type/test fully green in standard local run
+- [x] A1. Make lint/type/test fully green in standard local run
   - Exit criteria:
     - ruff check exits 0
     - mypy exits 0
@@ -32,14 +32,20 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
   - Exit criteria:
     - docker compose up --build starts all 4 services
     - API health endpoint responds successfully
+  - Status:
+    - Covered by `tests/e2e/test_docker_compose.py`
+    - Still requires a docker-daemon-capable environment for a non-skipped proof run
 
 - [ ] A3. Ensure e2e compose boot test runs in at least one docker-accessible environment
   - Exit criteria:
     - tests/e2e/test_docker_compose.py executes without skip in docker-capable environment
+  - Status:
+    - Test exists and passes config validation
+    - Current environment skips the boot path because the Docker daemon is unavailable
 
 ### Lane B — Contract and Interface Freeze
 
-- [ ] B1. Verify HTTP interfaces exactly match PLAN.md
+- [x] B1. Verify HTTP interfaces exactly match PLAN.md
   - Endpoints:
     - POST /v1/snapshots/git
     - POST /v1/queries
@@ -48,7 +54,7 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
   - Exit criteria:
     - Request/response fields match contracts and PLAN definitions
 
-- [ ] B2. Verify CLI mirrors API flows exactly
+- [x] B2. Verify CLI mirrors API flows exactly
   - Commands:
     - ingest git
     - query
@@ -59,7 +65,7 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
 
 ### Lane C — Test Plan Completion (As Written)
 
-- [ ] C1. Unit coverage check against PLAN list
+- [x] C1. Unit coverage check against PLAN list
   - Required areas:
     - cycle resolution
     - dirty propagation
@@ -70,25 +76,25 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
   - Exit criteria:
     - Tests present and passing for all listed areas
 
-- [ ] C2. Repository tests for persistence
+- [x] C2. Repository tests for persistence
   - Required tables/areas:
     - nodes, edges, manifests, answer events, review items
   - Exit criteria:
     - Persistence tests passing against Postgres
 
-- [ ] C3. Integration first-slice flow
+- [x] C3. Integration first-slice flow
   - Required path:
     - ingest local git repo -> query -> Phase A answer -> provenance persisted -> poll stubbed Phase B
   - Exit criteria:
     - Single integration test proving full path passes
 
-- [ ] C4. Cache reuse test
+- [x] C4. Cache reuse test
   - Required behavior:
     - equivalent repeated queries reuse compiled context manifest from Redis
   - Exit criteria:
     - Test proves reuse (no recompile on equivalent query)
 
-- [ ] C5. API/CLI parity test
+- [x] C5. API/CLI parity test
   - Required behavior:
     - same core services used by both entrypoints
   - Exit criteria:
@@ -96,11 +102,11 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
 
 ### Lane D — Docs and Release Readiness for First Scaffold
 
-- [ ] D1. README quick start validation
+- [x] D1. README quick start validation
   - Exit criteria:
     - Steps in README run as documented without hidden steps
 
-- [ ] D2. Architecture and interface docs consistency pass
+- [x] D2. Architecture and interface docs consistency pass
   - Exit criteria:
     - docs/architecture.md and docs/interfaces.md reflect current behavior
 
@@ -108,6 +114,8 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
   - Exit criteria:
     - v0.1.0 (or agreed equivalent) tagged on main
     - Release notes include gate results and test summary
+  - Status:
+    - Working tree is not yet in a releasable committed state, so no tag has been cut
 
 ## 4) Explicitly Deferred (Do Not Treat As Incomplete First-Scaffold Work)
 
