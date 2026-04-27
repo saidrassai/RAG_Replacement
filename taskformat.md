@@ -109,14 +109,14 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
   - Exit criteria:
     - docs/architecture.md and docs/interfaces.md reflect current behavior
 
-- [ ] D3. Release tag for first scaffold
+- [x] D3. Release tag for first scaffold
   - Exit criteria:
     - v0.1.0 (or agreed equivalent) tagged on main
     - Release notes include gate results and test summary
   - Status:
     - Release notes created at `docs/releases/v0.1.0-slice1.md`
     - Quality gates verified in docker-capable environment: `26 passed`
-    - Pending explicit git tag creation on main
+    - Tag pushed: `v0.1.0` on `origin/main`
 
 ## 4) Explicitly Deferred (Do Not Treat As Incomplete First-Scaffold Work)
 
@@ -153,9 +153,9 @@ Go-live rule for regulated use: all R1–R5 must be checked.
 
 Project is complete for planned first scaffold when all are true:
 
-- [ ] Section 3 (A-D) fully complete
-- [ ] No failing quality gates
-- [ ] Test plan items in PLAN.md all passing
-- [ ] First scaffold release tag created
+- [x] Section 3 (A-D) fully complete
+- [x] No failing quality gates
+- [x] Test plan items in PLAN.md all passing
+- [x] First scaffold release tag created
 
 Project is complete beyond scaffold only if deferred scope is explicitly approved and then delivered.
