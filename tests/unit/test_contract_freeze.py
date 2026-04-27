@@ -3,7 +3,14 @@ from __future__ import annotations
 from fastapi.routing import APIRoute
 from lattice_jit.apps.api.main import create_app
 from lattice_jit.apps.cli.main import app as cli_app
-from lattice_jit.contracts import QueryRequest, QueryResponse, SnapshotGitRequest
+from lattice_jit.contracts import (
+    AnswerEnvelope,
+    QueryRequest,
+    QueryResponse,
+    ReviewQueueResponse,
+    SnapshotGitRequest,
+    SnapshotResponse,
+)
 from typer.testing import CliRunner
 
 
@@ -47,6 +54,35 @@ def test_query_response_contract_fields_are_stable() -> None:
         "phase_a",
         "phase_b_status",
         "manifest_id",
+    }
+
+
+def test_snapshot_response_contract_fields_are_stable() -> None:
+    assert set(SnapshotResponse.model_fields) == {
+        "snapshot_id",
+        "root_node_id",
+        "status",
+    }
+
+
+def test_review_queue_response_contract_fields_are_stable() -> None:
+    assert set(ReviewQueueResponse.model_fields) == {"items"}
+
+
+def test_answer_envelope_contract_fields_are_stable() -> None:
+    assert set(AnswerEnvelope.model_fields) == {
+        "answer_id",
+        "tenant_id",
+        "phase",
+        "status",
+        "answer_text",
+        "confidence_band",
+        "provisional",
+        "provenance",
+        "conflict_flags",
+        "manifest_id",
+        "phase_b_status",
+        "created_at",
     }
 
 

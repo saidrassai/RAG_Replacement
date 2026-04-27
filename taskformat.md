@@ -28,20 +28,19 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
     - mypy exits 0
     - pytest exits 0
 
-- [ ] A2. Confirm docker compose local stack boot (Postgres, Redis, API, worker)
+- [x] A2. Confirm docker compose local stack boot (Postgres, Redis, API, worker)
   - Exit criteria:
     - docker compose up --build starts all 4 services
     - API health endpoint responds successfully
   - Status:
     - Covered by `tests/e2e/test_docker_compose.py`
-    - Still requires a docker-daemon-capable environment for a non-skipped proof run
+    - Verified in a docker-daemon-capable run: `pytest -q tests/e2e/test_docker_compose.py` -> `2 passed`
 
-- [ ] A3. Ensure e2e compose boot test runs in at least one docker-accessible environment
+- [x] A3. Ensure e2e compose boot test runs in at least one docker-accessible environment
   - Exit criteria:
     - tests/e2e/test_docker_compose.py executes without skip in docker-capable environment
   - Status:
-    - Test exists and passes config validation
-    - Current environment skips the boot path because the Docker daemon is unavailable
+    - Verified non-skipped pass in docker-capable environment: `2 passed in 121.46s`
 
 ### Lane B — Contract and Interface Freeze
 
@@ -115,7 +114,9 @@ Goal: finish and ship the planned first scaffold with clear checkpoints and no s
     - v0.1.0 (or agreed equivalent) tagged on main
     - Release notes include gate results and test summary
   - Status:
-    - Working tree is not yet in a releasable committed state, so no tag has been cut
+    - Release notes created at `docs/releases/v0.1.0-slice1.md`
+    - Quality gates verified in docker-capable environment: `26 passed`
+    - Pending explicit git tag creation on main
 
 ## 4) Explicitly Deferred (Do Not Treat As Incomplete First-Scaffold Work)
 
