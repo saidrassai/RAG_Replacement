@@ -17,6 +17,14 @@ class ModelProvider(Protocol):
         ...
 
 
+@dataclass(slots=True, frozen=True)
+class ModelProviderConfig:
+    provider: str = "stub"
+    litellm_model: str = "gpt-4o-mini"
+    litellm_temperature: float = 0.0
+    litellm_max_output_tokens: int | None = None
+
+
 @dataclass(slots=True)
 class StubModelProvider:
     def generate(
@@ -49,6 +57,8 @@ class StubModelProvider:
 @dataclass(slots=True)
 class LiteLLMModelProvider:
     model: str = "gpt-4o-mini"
+    temperature: float = 0.0
+    max_output_tokens: int | None = None
 
     def generate(
         self,
@@ -66,9 +76,9 @@ class LiteLLMModelProvider:
             f"{node.title}\n{item.snippet}"
             for item, node in zip(manifest.items, nodes, strict=False)
         )
-        response = completion(
-            model=self.model,
-            messages=[
+        completion_kwargs = {
+            "model": self.model,
+            "messages": [
                 {
                     "role": "system",
                     "content": (
@@ -79,5 +89,23 @@ class LiteLLMModelProvider:
                 },
                 {"role": "user", "content": f"Query:\n{query}\n\nContext:\n{context}"},
             ],
-        )
+            "temperature": self.temperature,
+        }
+        if self.max_output_tokens is not None:
+            completion_kwargs["max_tokens"] = self.max_output_tokens
+
+        response = completion(**completion_kwargs)
         return response.choices[0].message.content or ""
+
+
+def build_model_provider(config: ModelProviderConfig) -> ModelProvider:
+    provider_name = config.provider.strip().lower()
+    if provider_name == "stub":
+        return StubModelProvider()
+    if provider_name == "litellm":
+        return LiteLLMModelProvider(
+            model=config.litellm_model,
+            temperature=config.litellm_temperature,
+            max_output_tokens=config.litellm_max_output_tokens,
+        )
+    raise ValueError(f"Unknown model provider: {config.provider}")

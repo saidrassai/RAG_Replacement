@@ -35,7 +35,7 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
         GovernanceService,
         LoadSheddingService,
     )
-    from lattice_jit.policy import PolicyEvaluator
+    from lattice_jit.policy import build_policy_evaluator
     from lattice_jit.runtime import (
         ContextCompiler,
         PhaseBService,
@@ -73,10 +73,25 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
     compiler = ContextCompiler(repository, cache_store, resolved_settings)
     query_service = QueryService(
         repository=repository,
-        router=SemanticRouter(),
+        router=SemanticRouter(
+            max_nodes=resolved_settings.router_max_nodes,
+            mode=resolved_settings.router_mode,
+        ),
         compiler=compiler,
-        policy_evaluator=PolicyEvaluator(),
-        model_provider=_select_model_provider(resolved_settings.model_provider),
+        policy_evaluator=build_policy_evaluator(
+            _policy_evaluator_config(
+                mode=resolved_settings.policy_mode,
+                opa_url=resolved_settings.policy_opa_url,
+                opa_policy_path=resolved_settings.policy_opa_path,
+                opa_timeout_seconds=resolved_settings.policy_opa_timeout_seconds,
+            )
+        ),
+        model_provider=_select_model_provider(
+            provider_name=resolved_settings.model_provider,
+            litellm_model=resolved_settings.litellm_model,
+            litellm_temperature=resolved_settings.litellm_temperature,
+            litellm_max_output_tokens=resolved_settings.litellm_max_output_tokens,
+        ),
         governance_service=governance_service,
         phase_b_scheduler=scheduler,
     )
@@ -94,12 +109,38 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
     )
 
 
-def _select_model_provider(provider_name: str):
-    from lattice_jit.model_proxy import LiteLLMModelProvider, StubModelProvider
+def _select_model_provider(
+    provider_name: str,
+    litellm_model: str,
+    litellm_temperature: float,
+    litellm_max_output_tokens: int | None,
+):
+    from lattice_jit.model_proxy import ModelProviderConfig, build_model_provider
 
-    if provider_name == "litellm":
-        return LiteLLMModelProvider()
-    return StubModelProvider()
+    return build_model_provider(
+        ModelProviderConfig(
+            provider=provider_name,
+            litellm_model=litellm_model,
+            litellm_temperature=litellm_temperature,
+            litellm_max_output_tokens=litellm_max_output_tokens,
+        )
+    )
+
+
+def _policy_evaluator_config(
+    mode: str,
+    opa_url: str,
+    opa_policy_path: str,
+    opa_timeout_seconds: float,
+):
+    from lattice_jit.policy import PolicyEvaluatorConfig
+
+    return PolicyEvaluatorConfig(
+        mode=mode,
+        opa_url=opa_url,
+        opa_policy_path=opa_policy_path,
+        opa_timeout_seconds=opa_timeout_seconds,
+    )
 
 
 def _select_phase_b_scheduler(

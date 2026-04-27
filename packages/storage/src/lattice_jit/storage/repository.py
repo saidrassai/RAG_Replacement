@@ -203,6 +203,15 @@ class StorageRepository:
             by_id = {row.node_id: self._to_node(row) for row in rows}
             return [by_id[node_id] for node_id in node_id_list if node_id in by_id]
 
+    def list_nodes_for_tenant(self, tenant_id: UUID) -> list[KnowledgeNode]:
+        with self.database.session() as session:
+            rows = session.scalars(
+                select(KnowledgeNodeOrm)
+                .where(KnowledgeNodeOrm.tenant_id == tenant_id)
+                .order_by(KnowledgeNodeOrm.created_at.asc())
+            ).all()
+            return [self._to_node(row) for row in rows]
+
     def list_edges_for_nodes(self, node_ids: Iterable[UUID]) -> list[KnowledgeEdge]:
         node_id_list = list(node_ids)
         if not node_id_list:

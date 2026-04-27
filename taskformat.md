@@ -132,10 +132,29 @@ These are deferred by PLAN.md and must remain out of first-slice closure unless 
 
 Only start after Section 3 is complete.
 
-- [ ] P1. Keep semantic router behind adapter; integrate stronger router without API contract changes
-- [ ] P2. Keep default model stub path stable; evolve LiteLLM path behind same interface
-- [ ] P3. Expand governance jobs from scaffold toward full implementations
-- [ ] P4. Expand policy from inline default toward sidecar path when scope is approved
+- [x] P1. Keep semantic router behind adapter; integrate stronger router without API contract changes
+  - Status:
+    - Implemented adapter-backed router modes (`baseline` default, `hybrid` stronger scoring) with unchanged `SemanticRouter.select(...)` contract
+    - Configuration wired via settings (`router_mode`, `router_max_nodes`) and dependency wiring
+    - Validation: `ruff check` clean, `mypy` clean, targeted router/parity/contract tests `13 passed`, full suite `29 passed, 1 skipped`
+- [x] P2. Keep default model stub path stable; evolve LiteLLM path behind same interface
+  - Status:
+    - Added typed model-provider factory config with explicit provider selection while preserving `stub` as default path
+    - Evolved LiteLLM adapter with configurable `model`, `temperature`, and optional `max_output_tokens` under unchanged `ModelProvider.generate(...)` interface
+    - Wiring now resolves provider through settings-backed config (`model_provider`, `litellm_model`, `litellm_temperature`, `litellm_max_output_tokens`)
+    - Validation: `ruff check` clean, `mypy` clean, targeted tests `12 passed`, full suite `32 passed, 1 skipped`
+- [x] P3. Expand governance jobs from scaffold toward full implementations
+  - Status:
+    - Expanded governance scan into an operational job: computes review/feedback/node metrics and applies adaptive serving-confidence decay for stale nodes
+    - Added repository support for tenant-wide node scans used by governance jobs
+    - Audit payload for governance scans now includes full metric summary (`pending_review_items`, `high_risk_pending`, `feedback_labels`, `nodes_scanned`, `decayed_nodes`)
+    - Validation: `ruff check` clean, `mypy` clean, targeted governance/contract tests `14 passed`, full suite `33 passed, 1 skipped`
+- [x] P4. Expand policy from inline default toward sidecar path when scope is approved
+  - Status:
+    - Added policy adapter/factory path with explicit modes: `inline` (default) and `opa_http` sidecar
+    - Added OPA HTTP evaluator that preserves `PolicyBundle` contract and safely falls back to inline decisions when sidecar data is unavailable/invalid
+    - Wired policy mode and sidecar endpoint config through settings and container wiring (`policy_mode`, `policy_opa_url`, `policy_opa_path`, `policy_opa_timeout_seconds`)
+    - Validation: `ruff check` clean, `mypy` clean, targeted policy/governance/contract tests `19 passed`, full suite `38 passed, 1 skipped`
 
 ## 6) Regulated-Domain Go/No-Go Checklist (Finance / Fintech / Healthcare)
 

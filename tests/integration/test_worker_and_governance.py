@@ -109,3 +109,7 @@ def test_manifest_invalidation_and_governance_scan(
     assert manifest is not None
     assert manifest.status.value == "invalidated"
     assert "pending_review_items" in scan
+    assert "high_risk_pending" in scan
+    assert "feedback_labels" in scan
+    assert "nodes_scanned" in scan
+    assert "decayed_nodes" in scan

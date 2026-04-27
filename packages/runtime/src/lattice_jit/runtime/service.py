@@ -15,7 +15,7 @@ from lattice_jit.core import NotFoundError, generate_id, utcnow
 from lattice_jit.governance import GovernanceService
 from lattice_jit.lattice import build_provenance, compute_confidence_band
 from lattice_jit.model_proxy import ModelProvider
-from lattice_jit.policy import PolicyEvaluator
+from lattice_jit.policy import PolicyEvaluatorProtocol
 from lattice_jit.storage import StorageRepository
 
 from .compiler import ContextCompiler
@@ -28,7 +28,7 @@ class QueryService:
     repository: StorageRepository
     router: SemanticRouter
     compiler: ContextCompiler
-    policy_evaluator: PolicyEvaluator
+    policy_evaluator: PolicyEvaluatorProtocol
     model_provider: ModelProvider
     governance_service: GovernanceService
     phase_b_scheduler: PhaseBScheduler

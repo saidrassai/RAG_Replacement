@@ -22,11 +22,20 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/2"
     celery_eager: bool = True
+    policy_mode: str = "inline"
+    policy_opa_url: str = "http://localhost:8181"
+    policy_opa_path: str = "/v1/data/lattice_jit/policy"
+    policy_opa_timeout_seconds: float = 2.0
     model_provider: str = "stub"
+    litellm_model: str = "gpt-4o-mini"
+    litellm_temperature: float = 0.0
+    litellm_max_output_tokens: int | None = None
     default_tenant_id: UUID = Field(default=UUID("00000000-0000-0000-0000-000000000001"))
     max_context_tokens: int = 12_000
     context_item_char_budget: int = 2_400
     cache_ttl_seconds: int = 3_600
+    router_mode: str = "baseline"
+    router_max_nodes: int = 8
     log_level: str = "INFO"
 
 

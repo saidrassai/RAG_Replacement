@@ -1,3 +1,15 @@
-from .provider import LiteLLMModelProvider, ModelProvider, StubModelProvider
+from .provider import (
+    LiteLLMModelProvider,
+    ModelProvider,
+    ModelProviderConfig,
+    StubModelProvider,
+    build_model_provider,
+)
 
-__all__ = ["LiteLLMModelProvider", "ModelProvider", "StubModelProvider"]
+__all__ = [
+    "LiteLLMModelProvider",
+    "ModelProvider",
+    "ModelProviderConfig",
+    "StubModelProvider",
+    "build_model_provider",
+]
