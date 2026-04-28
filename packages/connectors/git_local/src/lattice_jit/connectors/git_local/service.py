@@ -63,6 +63,7 @@ class GitLocalSnapshotService:
             raise ValueError(f"Snapshot {snapshot_id} was not found.")
         if snapshot.status == SnapshotStatus.COMPLETED and snapshot.root_node_id is not None:
             return SnapshotResponse(
+                tenant_id=snapshot.tenant_id,
                 snapshot_id=snapshot.snapshot_id,
                 root_node_id=snapshot.root_node_id,
                 status=snapshot.status,
@@ -114,6 +115,7 @@ class GitLocalSnapshotService:
         self.repository.upsert_edges(edges)
         self.repository.mark_snapshot_completed(snapshot.snapshot_id, root_node.node_id)
         return SnapshotResponse(
+            tenant_id=snapshot.tenant_id,
             snapshot_id=snapshot.snapshot_id,
             root_node_id=root_node.node_id,
             status=SnapshotStatus.COMPLETED,

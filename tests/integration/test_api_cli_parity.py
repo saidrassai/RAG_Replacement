@@ -70,7 +70,9 @@ def test_api_and_cli_share_same_services(test_settings, sample_workspace: Path) 
     assert api_result.status_code == 200
     query_payload = QueryResponse.model_validate(api_result.json())
 
-    answer_result = client.get(f"/v1/answers/{query_payload.answer_id}")
+    answer_result = client.get(
+        f"/v1/answers/{query_payload.answer_id}", params={"tenant_id": str(tenant_id)}
+    )
     assert answer_result.status_code == 200
     AnswerEnvelope.model_validate(answer_result.json())
 

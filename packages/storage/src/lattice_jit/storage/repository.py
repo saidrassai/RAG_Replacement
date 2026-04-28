@@ -281,6 +281,7 @@ class StorageRepository:
             for item in manifest.items:
                 session.add(
                     CompiledContextItemOrm(
+                        tenant_id=manifest.tenant_id,
                         manifest_id=item.manifest_id,
                         ordinal=item.ordinal,
                         node_id=item.node_id,
@@ -401,6 +402,24 @@ class StorageRepository:
             ).all()
             return [self._to_review_item(row) for row in rows]
 
+    def get_review_item(self, review_item_id: UUID, tenant_id: UUID) -> ReviewItem | None:
+        with self.database.session() as session:
+            orm = session.get(ReviewQueueOrm, review_item_id)
+            if orm is None or orm.tenant_id != tenant_id:
+                return None
+            return self._to_review_item(orm)
+
+    def update_review_item_state(
+        self, review_item_id: UUID, tenant_id: UUID, review_state: ReviewState, reviewed_at: datetime
+    ) -> ReviewItem | None:
+        with self.database.session() as session:
+            orm = session.get(ReviewQueueOrm, review_item_id)
+            if orm is None or orm.tenant_id != tenant_id:
+                return None
+            orm.review_state = review_state.value
+            orm.reviewed_at = reviewed_at
+            return self._to_review_item(orm)
+
     def store_feedback_label(
         self,
         tenant_id: UUID,
@@ -477,6 +496,63 @@ class StorageRepository:
                 for row in rows
             ]
 
+    def list_audit_events_filtered(
+        self,
+        tenant_id: UUID,
+        *,
+        event_type: str | None = None,
+        resource_type: str | None = None,
+        resource_id: UUID | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_desc: bool = True,
+    ) -> list[AuditEvent]:
+        with self.database.session() as session:
+            stmt = select(AuditEventOrm).where(AuditEventOrm.tenant_id == tenant_id)
+            if event_type:
+                stmt = stmt.where(AuditEventOrm.event_type == event_type)
+            if resource_type:
+                stmt = stmt.where(AuditEventOrm.resource_type == resource_type)
+            if resource_id is not None:
+                stmt = stmt.where(AuditEventOrm.resource_id == resource_id)
+            order = desc(AuditEventOrm.created_at) if sort_desc else AuditEventOrm.created_at.asc()
+            stmt = stmt.order_by(order).offset(offset).limit(limit)
+            rows = session.scalars(stmt).all()
+            return [
+                AuditEvent(
+                    audit_event_id=row.audit_event_id,
+                    tenant_id=row.tenant_id,
+                    event_type=row.event_type,
+                    resource_type=row.resource_type,
+                    resource_id=row.resource_id,
+                    payload=_payload_dict(row.payload_json or {}),
+                    created_at=row.created_at,
+                )
+                for row in rows
+            ]
+
+    def count_audit_events(
+        self,
+        tenant_id: UUID,
+        *,
+        event_type: str | None = None,
+        resource_type: str | None = None,
+        resource_id: UUID | None = None,
+    ) -> int:
+        with self.database.session() as session:
+            stmt = select(AuditEventOrm).where(AuditEventOrm.tenant_id == tenant_id)
+            if event_type:
+                stmt = stmt.where(AuditEventOrm.event_type == event_type)
+            if resource_type:
+                stmt = stmt.where(AuditEventOrm.resource_type == resource_type)
+            if resource_id is not None:
+                stmt = stmt.where(AuditEventOrm.resource_id == resource_id)
+            from sqlalchemy import func
+
+            count_stmt = select(func.count()).select_from(stmt.subquery())
+            result = session.scalar(count_stmt)
+            return result or 0
+
     def _manifest_with_items(
         self,
         session: Session,
@@ -500,6 +576,7 @@ class StorageRepository:
             expires_at=orm.expires_at,
             items=[
                 CompiledContextItem(
+                    tenant_id=item.tenant_id,
                     manifest_id=item.manifest_id,
                     ordinal=item.ordinal,
                     node_id=item.node_id,

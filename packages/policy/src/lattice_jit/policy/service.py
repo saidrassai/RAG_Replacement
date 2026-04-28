@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Protocol
 from urllib import request
@@ -10,9 +11,14 @@ from uuid import UUID
 from lattice_jit.contracts import PhaseBMode, PolicyBundle
 from lattice_jit.core import stable_hash
 
+logger = logging.getLogger(__name__)
+
 
 class PolicyEvaluatorProtocol(Protocol):
     def evaluate(self, tenant_id: UUID, query: str, phase_b_mode: PhaseBMode) -> PolicyBundle:
+        ...
+
+    def health_check(self) -> dict[str, str]:
         ...
 
 
@@ -22,6 +28,7 @@ class PolicyEvaluatorConfig:
     opa_url: str = "http://localhost:8181"
     opa_policy_path: str = "/v1/data/lattice_jit/policy"
     opa_timeout_seconds: float = 2.0
+    opa_fail_closed: bool = False
 
 
 class PolicyEvaluator:
@@ -53,16 +60,21 @@ class PolicyEvaluator:
             return "cost"
         return "general"
 
+    def health_check(self) -> dict[str, str]:
+        return {"status": "healthy", "mode": "inline"}
+
 
 @dataclass(slots=True)
 class OpaHttpPolicyEvaluator:
     opa_url: str = "http://localhost:8181"
     opa_policy_path: str = "/v1/data/lattice_jit/policy"
     timeout_seconds: float = 2.0
+    fail_closed: bool = False
     inline_fallback: PolicyEvaluator = PolicyEvaluator()
 
     def evaluate(self, tenant_id: UUID, query: str, phase_b_mode: PhaseBMode) -> PolicyBundle:
         fallback = self.inline_fallback.evaluate(tenant_id, query, phase_b_mode)
+        is_regulated = fallback.query_class in {"compliance", "security"}
         payload: dict[str, object] = {
             "input": {
                 "tenant_id": str(tenant_id),
@@ -77,6 +89,16 @@ class OpaHttpPolicyEvaluator:
             result = response.get("result") if isinstance(response, dict) else None
             result_obj = result if isinstance(result, dict) else {}
         except (RuntimeError, URLError, TimeoutError, ValueError, TypeError):
+            logger.warning(
+                "OPA HTTP evaluator unreachable at %s — falling back to inline policy. "
+                "Policy decisions may be less precise.",
+                self.opa_url,
+            )
+            if self.fail_closed and is_regulated:
+                raise RuntimeError(
+                    f"OPA sidecar unreachable at {self.opa_url} and fail_closed is enabled "
+                    f"for regulated query class '{fallback.query_class}'. Query rejected."
+                ) from None
             result_obj = {}
 
         return PolicyBundle(
@@ -94,6 +116,13 @@ class OpaHttpPolicyEvaluator:
                 response_signature(result_obj, fallback),
             ),
         )
+
+    def health_check(self) -> dict[str, str]:
+        try:
+            self._post_json({"input": {"query_class": "general", "phase_b_mode": "auto"}})
+            return {"status": "healthy", "mode": "opa_http"}
+        except (RuntimeError, URLError, TimeoutError, ValueError, TypeError):
+            return {"status": "degraded", "mode": "opa_http"}
 
     def _post_json(self, payload: dict[str, object]) -> dict[str, object]:
         raw = json.dumps(payload).encode("utf-8")
@@ -121,6 +150,7 @@ def build_policy_evaluator(config: PolicyEvaluatorConfig) -> PolicyEvaluatorProt
             opa_url=config.opa_url,
             opa_policy_path=config.opa_policy_path,
             timeout_seconds=config.opa_timeout_seconds,
+            fail_closed=config.opa_fail_closed,
         )
     raise ValueError(f"Unknown policy evaluator mode: {config.mode}")
 

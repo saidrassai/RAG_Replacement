@@ -54,7 +54,12 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
     cache_store = build_cache_store(resolved_settings.redis_url)
     audit_service = AuditService(repository)
     calibration_service = CalibrationService(repository)
-    load_shedding_service = LoadSheddingService(repository)
+    load_shedding_service = LoadSheddingService(
+        repository,
+        enabled=resolved_settings.load_shedding_enabled,
+        max_items_per_minute=resolved_settings.load_shedding_max_items_per_minute,
+        window_seconds=resolved_settings.load_shedding_window_seconds,
+    )
     governance_service = GovernanceService(
         repository=repository,
         audit_service=audit_service,
@@ -84,13 +89,11 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
                 opa_url=resolved_settings.policy_opa_url,
                 opa_policy_path=resolved_settings.policy_opa_path,
                 opa_timeout_seconds=resolved_settings.policy_opa_timeout_seconds,
+                opa_fail_closed=resolved_settings.policy_opa_fail_closed,
             )
         ),
         model_provider=_select_model_provider(
-            provider_name=resolved_settings.model_provider,
-            litellm_model=resolved_settings.litellm_model,
-            litellm_temperature=resolved_settings.litellm_temperature,
-            litellm_max_output_tokens=resolved_settings.litellm_max_output_tokens,
+            resolved_settings,
         ),
         governance_service=governance_service,
         phase_b_scheduler=scheduler,
@@ -109,20 +112,18 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
     )
 
 
-def _select_model_provider(
-    provider_name: str,
-    litellm_model: str,
-    litellm_temperature: float,
-    litellm_max_output_tokens: int | None,
-):
+def _select_model_provider(settings: Settings):
     from lattice_jit.model_proxy import ModelProviderConfig, build_model_provider
 
     return build_model_provider(
         ModelProviderConfig(
-            provider=provider_name,
-            litellm_model=litellm_model,
-            litellm_temperature=litellm_temperature,
-            litellm_max_output_tokens=litellm_max_output_tokens,
+            provider=settings.model_provider,
+            litellm_model=settings.litellm_model,
+            litellm_temperature=settings.litellm_temperature,
+            litellm_max_output_tokens=settings.litellm_max_output_tokens,
+            deepseek_api_key=settings.litellm_deepseek_api_key,
+            deepseek_base_url=settings.litellm_deepseek_base_url,
+            prompt_caching_enabled=settings.litellm_prompt_caching_enabled,
         )
     )
 
@@ -132,6 +133,7 @@ def _policy_evaluator_config(
     opa_url: str,
     opa_policy_path: str,
     opa_timeout_seconds: float,
+    opa_fail_closed: bool = False,
 ):
     from lattice_jit.policy import PolicyEvaluatorConfig
 
@@ -140,6 +142,7 @@ def _policy_evaluator_config(
         opa_url=opa_url,
         opa_policy_path=opa_policy_path,
         opa_timeout_seconds=opa_timeout_seconds,
+        opa_fail_closed=opa_fail_closed,
     )
 
 

@@ -23,6 +23,23 @@ services:
       timeout: 5s
       retries: 20
 
+  opa:
+    image: openpolicyagent/opa:latest
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "/policies"
+    volumes:
+      - ./opa:/policies
+    ports:
+      - "8181:8181"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/data/lattice_jit/policy"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   api:
     build:
       context: ../..
@@ -34,11 +51,15 @@ services:
       LJIT_CELERY_RESULT_BACKEND: redis://redis:6379/2
       LJIT_CELERY_EAGER: "false"
       LJIT_MODEL_PROVIDER: stub
+      LJIT_POLICY_MODE: opa_http
+      LJIT_POLICY_OPA_URL: http://opa:8181
     command: ["uv", "run", "--package", "lattice-jit-api", "lattice-jit-api"]
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      opa:
         condition: service_healthy
     ports:
       - "${LJIT_API_PORT:-8000}:8000"
@@ -54,9 +75,13 @@ services:
       LJIT_CELERY_RESULT_BACKEND: redis://redis:6379/2
       LJIT_CELERY_EAGER: "false"
       LJIT_MODEL_PROVIDER: stub
+      LJIT_POLICY_MODE: opa_http
+      LJIT_POLICY_OPA_URL: http://opa:8181
     command: ["uv", "run", "--package", "lattice-jit-worker", "lattice-jit-worker"]
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      opa:
         condition: service_healthy

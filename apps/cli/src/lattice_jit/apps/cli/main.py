@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 from functools import lru_cache
+from pathlib import Path
 from uuid import UUID
 
 import typer
@@ -12,9 +15,11 @@ app = typer.Typer(help="Lattice-JIT operator CLI")
 ingest_app = typer.Typer(help="Snapshot ingestion commands")
 answer_app = typer.Typer(help="Answer inspection commands")
 review_app = typer.Typer(help="Review queue commands")
+audit_app = typer.Typer(help="Audit trail commands")
 app.add_typer(ingest_app, name="ingest")
 app.add_typer(answer_app, name="answer")
 app.add_typer(review_app, name="review")
+app.add_typer(audit_app, name="audit")
 
 
 @lru_cache(maxsize=1)
@@ -49,6 +54,29 @@ def ingest_git(
     typer.echo(json.dumps(response.model_dump(mode="json"), indent=2))
 
 
+@ingest_app.command("pdf")
+def ingest_pdf(
+    tenant_id: UUID = typer.Option(...),
+    pdf_path: str = typer.Option(...),
+    page_mode: str = typer.Option("document"),
+) -> None:
+    try:
+        from lattice_jit.connectors.pdf import PdfSnapshotService
+    except ImportError as exc:
+        typer.echo("pypdf2 is not installed. Install it with: pip install pypdf2", err=True)
+        raise typer.Exit(code=1) from exc
+    container = get_container()
+    service = PdfSnapshotService(container.repository)
+    response = service.ingest(tenant_id=tenant_id, pdf_path=pdf_path, page_mode=page_mode)
+    container.governance_service.record_snapshot_ingested(
+        tenant_id=tenant_id,
+        snapshot_id=response.snapshot_id,
+        repo_path=pdf_path,
+        node_count=len(container.repository.list_snapshot_nodes(response.snapshot_id)),
+    )
+    typer.echo(json.dumps(response.model_dump(mode="json"), indent=2))
+
+
 @app.command("query")
 def run_query(
     tenant_id: UUID = typer.Option(...),
@@ -68,8 +96,11 @@ def run_query(
 
 
 @answer_app.command("get")
-def answer_get(answer_id: UUID) -> None:
-    response = get_container().query_service.get_answer(answer_id)
+def answer_get(
+    answer_id: UUID = typer.Argument(...),
+    tenant_id: UUID = typer.Option(...),
+) -> None:
+    response = get_container().query_service.get_answer(answer_id, tenant_id=tenant_id)
     typer.echo(json.dumps(response.model_dump(mode="json"), indent=2))
 
 
@@ -77,3 +108,99 @@ def answer_get(answer_id: UUID) -> None:
 def review_list(tenant_id: UUID = typer.Option(...)) -> None:
     items = get_container().governance_service.list_review_queue(tenant_id)
     typer.echo(json.dumps({"items": [item.model_dump(mode="json") for item in items]}, indent=2))
+
+
+@review_app.command("approve")
+def review_approve(
+    review_item_id: UUID = typer.Argument(...),
+    tenant_id: UUID = typer.Option(...),
+) -> None:
+    result = get_container().governance_service.approve_review(review_item_id, tenant_id)
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+
+
+@review_app.command("reject")
+def review_reject(
+    review_item_id: UUID = typer.Argument(...),
+    tenant_id: UUID = typer.Option(...),
+) -> None:
+    result = get_container().governance_service.reject_review(review_item_id, tenant_id)
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+
+
+@audit_app.command("list")
+def audit_list(
+    tenant_id: UUID = typer.Option(...),
+    event_type: str | None = typer.Option(None),
+    resource_type: str | None = typer.Option(None),
+    resource_id: UUID | None = typer.Option(None),
+    limit: int = typer.Option(100),
+    offset: int = typer.Option(0),
+) -> None:
+    container = get_container()
+    items = container.repository.list_audit_events_filtered(
+        tenant_id,
+        event_type=event_type,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        limit=limit,
+        offset=offset,
+    )
+    total = container.repository.count_audit_events(
+        tenant_id,
+        event_type=event_type,
+        resource_type=resource_type,
+        resource_id=resource_id,
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "items": [item.model_dump(mode="json") for item in items],
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            },
+            indent=2,
+        )
+    )
+
+
+@audit_app.command("export")
+def audit_export(
+    tenant_id: UUID = typer.Option(...),
+    format: str = typer.Option("json"),
+    output: Path = typer.Option(Path("audit_events.json")),
+    event_type: str | None = typer.Option(None),
+    resource_type: str | None = typer.Option(None),
+    resource_id: UUID | None = typer.Option(None),
+) -> None:
+    container = get_container()
+    items = container.repository.list_audit_events_filtered(
+        tenant_id,
+        event_type=event_type,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        limit=10_000,
+        offset=0,
+    )
+    if format == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow([
+            "audit_event_id", "tenant_id", "event_type", "resource_type",
+            "resource_id", "payload", "created_at",
+        ])
+        for item in items:
+            writer.writerow([
+                str(item.audit_event_id),
+                str(item.tenant_id),
+                item.event_type,
+                item.resource_type,
+                str(item.resource_id) if item.resource_id else "",
+                str(item.payload),
+                item.created_at.isoformat(),
+            ])
+        output.write_text(buf.getvalue(), encoding="utf-8")
+    else:
+        output.write_text(json.dumps([item.model_dump(mode="json") for item in items], indent=2), encoding="utf-8")
+    typer.echo(f"Exported {len(items)} audit events to {output}")

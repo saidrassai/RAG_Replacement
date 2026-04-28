@@ -23,6 +23,9 @@ class ModelProviderConfig:
     litellm_model: str = "gpt-4o-mini"
     litellm_temperature: float = 0.0
     litellm_max_output_tokens: int | None = None
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    prompt_caching_enabled: bool = False
 
 
 @dataclass(slots=True)
@@ -59,6 +62,9 @@ class LiteLLMModelProvider:
     model: str = "gpt-4o-mini"
     temperature: float = 0.0
     max_output_tokens: int | None = None
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    prompt_caching_enabled: bool = False
 
     def generate(
         self,
@@ -72,27 +78,45 @@ class LiteLLMModelProvider:
         except ImportError as exc:
             raise RuntimeError("litellm is not installed; use the stub provider or install litellm.") from exc
 
-        context = "\n\n".join(
-            f"{node.title}\n{item.snippet}"
-            for item, node in zip(manifest.items, nodes, strict=False)
-        )
-        completion_kwargs = {
+        context_parts: list[str] = []
+        for item, node in zip(manifest.items, nodes, strict=False):
+            context_parts.append(
+                f"[{item.role.value}] {node.title} (score={item.score:.2f}, "
+                f"source={node.source_uri or 'unknown'})\n{item.snippet}"
+            )
+        context = "\n\n".join(context_parts) if context_parts else "- No evidence matched the query."
+
+        messages: list[dict[str, str]] = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a financial knowledge assistant analyzing compiled context with provenance awareness. "
+                    f"Policy class: {policy_bundle.query_class}. "
+                    "Cite source URIs when referencing facts. "
+                    "Do not invent facts outside the provided context. "
+                    "If the context is insufficient, state so clearly."
+                ),
+            },
+            {"role": "user", "content": f"Query:\n{query}\n\nContext:\n{context}"},
+        ]
+
+        completion_kwargs: dict[str, object] = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "Answer with clear provenance awareness. "
-                        f"Policy class: {policy_bundle.query_class}. "
-                        "Do not invent facts outside the context."
-                    ),
-                },
-                {"role": "user", "content": f"Query:\n{query}\n\nContext:\n{context}"},
-            ],
+            "messages": messages,
             "temperature": self.temperature,
         }
         if self.max_output_tokens is not None:
             completion_kwargs["max_tokens"] = self.max_output_tokens
+        if self.prompt_caching_enabled:
+            completion_kwargs["cache"] = {"type": "ephemeral"}
+
+        if self.model.startswith("deepseek/"):
+            import os
+
+            api_key = self.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+            if api_key:
+                completion_kwargs["api_key"] = api_key
+            completion_kwargs["api_base"] = self.deepseek_base_url
 
         response = completion(**completion_kwargs)
         return response.choices[0].message.content or ""
@@ -107,5 +131,8 @@ def build_model_provider(config: ModelProviderConfig) -> ModelProvider:
             model=config.litellm_model,
             temperature=config.litellm_temperature,
             max_output_tokens=config.litellm_max_output_tokens,
+            deepseek_api_key=config.deepseek_api_key,
+            deepseek_base_url=config.deepseek_base_url,
+            prompt_caching_enabled=config.prompt_caching_enabled,
         )
     raise ValueError(f"Unknown model provider: {config.provider}")

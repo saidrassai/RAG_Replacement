@@ -178,3 +178,25 @@ Project is complete for planned first scaffold when all are true:
 - [x] First scaffold release tag created
 
 Project is complete beyond scaffold only if deferred scope is explicitly approved and then delivered.
+
+---
+
+## 8) Phase 2 — Deferred Scope Promotion (v0.2.0)
+
+All five deferred items from Section 4 explicitly approved and delivered.
+
+- [x] **Lane F: Full OPA Sidecar Enforcement** — 6 Rego rules, fail-closed mode, health-check endpoint, docker-compose OPA service. 8 new tests.
+- [x] **Lane G: Audit Trail Viewer** — Filtered/paginated audit API, CSV/JSON export, CLI commands. 8 new tests.
+- [x] **Lane H: Reviewer Web UI** — Jinja2 server-rendered templates, review list (filters/sort/pagination), detail page (approve/reject). 7 new tests.
+- [x] **Lane K: Real LLM Integration (DeepSeek v4)** — litellm dependency, DeepSeek config, enhanced prompts, prompt caching. 4 new tests.
+- [x] **Lane I: Full Isotonic Calibration** — PAVA algorithm, calibration curve, governance scan integration. 10 new tests.
+- [x] **Lane J: Full Load Shedding** — Risk-based sampling, tenant rate limiting, configurable thresholds. 4 new tests.
+- [x] **Lane L: PDF Connector** — pypdf2 extraction, page/document modes, API + CLI integration.
+
+### Phase 2 Gate Results (v0.2.0)
+
+- ruff: PASS (65 source files, clean)
+- mypy: PASS (65 source files, clean)
+- pytest: PASS (81 passed, zero regressions)
+- Release tag: v0.2.0
+- Release notes: docs/releases/v0.2.0.md

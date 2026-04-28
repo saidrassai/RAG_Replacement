@@ -26,6 +26,7 @@ members = [
   "packages/contracts",
   "packages/core",
   "packages/connectors/git_local",
+  "packages/connectors/pdf",
   "packages/lattice",
   "packages/runtime",
   "packages/governance",
@@ -41,6 +42,7 @@ lattice-jit-worker = { workspace = true }
 lattice-jit-contracts = { workspace = true }
 lattice-jit-core = { workspace = true }
 lattice-jit-connector-git-local = { workspace = true }
+lattice-jit-connector-pdf = { workspace = true }
 lattice-jit-lattice = { workspace = true }
 lattice-jit-runtime = { workspace = true }
 lattice-jit-governance = { workspace = true }
@@ -77,6 +79,7 @@ mypy_path = [
   "packages/contracts/src",
   "packages/core/src",
   "packages/connectors/git_local/src",
+  "packages/connectors/pdf/src",
   "packages/lattice/src",
   "packages/runtime/src",
   "packages/governance/src",
@@ -91,6 +94,7 @@ files = [
   "packages/contracts/src/lattice_jit/contracts",
   "packages/core/src/lattice_jit/core",
   "packages/connectors/git_local/src/lattice_jit/connectors/git_local",
+  "packages/connectors/pdf/src/lattice_jit/connectors/pdf",
   "packages/lattice/src/lattice_jit/lattice",
   "packages/runtime/src/lattice_jit/runtime",
   "packages/governance/src/lattice_jit/governance",
@@ -112,5 +116,6 @@ module = [
   "celery",
   "celery.*",
   "litellm",
+  "pypdf2",
 ]
 ignore_missing_imports = true

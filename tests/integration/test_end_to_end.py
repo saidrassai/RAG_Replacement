@@ -23,7 +23,7 @@ def test_full_vertical_slice(container, sample_workspace) -> None:
             phase_b_mode=PhaseBMode.FORCE,
         )
     )
-    latest = container.query_service.get_answer(response.answer_id)
+    latest = container.query_service.get_answer(response.answer_id, tenant_id=tenant_id)
 
     assert response.phase_a.provisional is True
     assert response.phase_a.provenance

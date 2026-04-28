@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2 style="margin-bottom: 1rem; font-size: 1.3rem;">Review Item: {{ item.review_item_id }}</h2>
+
+    <dl>
+        <dt>Fact Fingerprint</dt>
+        <dd><code>{{ item.fact_fingerprint }}</code></dd>
+
+        <dt>Fact Type</dt>
+        <dd>{{ item.fact_type }}</dd>
+
+        <dt>Canonical Node ID</dt>
+        <dd>
+            {% if item.canonical_node_id %}
+                <code>{{ item.canonical_node_id }}</code>
+            {% else %}
+                <em>None</em>
+            {% endif %}
+        </dd>
+
+        <dt>Dedup Count</dt>
+        <dd>{{ item.dedup_count }}</dd>
+
+        <dt>Risk Level</dt>
+        <dd>{{ item.risk_level.value }}</dd>
+
+        <dt>Review State</dt>
+        <dd>{{ item.review_state.value }}</dd>
+
+        <dt>Sample Rate</dt>
+        <dd>{{ item.sample_rate }}</dd>
+
+        <dt>Evidence Count</dt>
+        <dd>{{ item.evidence_count }}</dd>
+
+        <dt>Created At</dt>
+        <dd>{{ item.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</dd>
+
+        <dt>Reviewed At</dt>
+        <dd>
+            {% if item.reviewed_at %}
+                {{ item.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") }}
+            {% else %}
+                <em>Not yet reviewed</em>
+            {% endif %}
+        </dd>
+    </dl>
+
+    {% if item.review_state.value == "pending" %}
+    <div class="action-bar">
+        <form method="post" action="/ui/review-queue/{{ item.review_item_id }}/approve">
+            <input type="hidden" name="tenant_id" value="{{ tenant_id }}">
+            <button type="submit" class="btn btn-approve">Approve</button>
+        </form>
+        <form method="post" action="/ui/review-queue/{{ item.review_item_id }}/reject">
+            <input type="hidden" name="tenant_id" value="{{ tenant_id }}">
+            <button type="submit" class="btn btn-reject">Reject</button>
+        </form>
+    </div>
+    {% else %}
+    <p class="reviewed-notice">Already reviewed ({{ item.review_state.value }}).</p>
+    {% endif %}
+
+    <div>
+        <a class="back-link" href="/ui/review-queue?tenant_id={{ tenant_id }}">&larr; Back to Review Queue</a>
+    </div>
+</div>
+{% endblock %}

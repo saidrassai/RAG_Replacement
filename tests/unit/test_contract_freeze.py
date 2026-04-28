@@ -59,6 +59,7 @@ def test_query_response_contract_fields_are_stable() -> None:
 
 def test_snapshot_response_contract_fields_are_stable() -> None:
     assert set(SnapshotResponse.model_fields) == {
+        "tenant_id",
         "snapshot_id",
         "root_node_id",
         "status",

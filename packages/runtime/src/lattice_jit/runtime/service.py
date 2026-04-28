@@ -94,8 +94,10 @@ class QueryService:
             manifest_id=manifest.manifest_id,
         )
 
-    def get_answer(self, answer_id: UUID) -> AnswerEnvelope:
+    def get_answer(self, answer_id: UUID, *, tenant_id: UUID) -> AnswerEnvelope:
         answer = self.repository.get_latest_answer(answer_id)
         if answer is None:
+            raise NotFoundError(f"Answer {answer_id} was not found.")
+        if answer.tenant_id != tenant_id:
             raise NotFoundError(f"Answer {answer_id} was not found.")
         return answer

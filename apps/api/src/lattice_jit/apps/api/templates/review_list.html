@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2 style="margin-bottom: 0.75rem; font-size: 1.3rem;">Review Queue</h2>
+
+    <form class="filter-form" method="get" action="/ui/review-queue">
+        <input type="hidden" name="tenant_id" value="{{ tenant_id }}">
+
+        <div class="field-group">
+            <label for="risk_level">Risk Level</label>
+            <select id="risk_level" name="risk_level">
+                <option value="all" {% if risk_level == "all" %}selected{% endif %}>All</option>
+                <option value="low" {% if risk_level == "low" %}selected{% endif %}>LOW</option>
+                <option value="medium" {% if risk_level == "medium" %}selected{% endif %}>MEDIUM</option>
+                <option value="high" {% if risk_level == "high" %}selected{% endif %}>HIGH</option>
+            </select>
+        </div>
+
+        <div class="field-group">
+            <label for="review_state">Review State</label>
+            <select id="review_state" name="review_state">
+                <option value="all" {% if review_state == "all" %}selected{% endif %}>All</option>
+                <option value="pending" {% if review_state == "pending" %}selected{% endif %}>PENDING</option>
+                <option value="approved" {% if review_state == "approved" %}selected{% endif %}>APPROVED</option>
+                <option value="rejected" {% if review_state == "rejected" %}selected{% endif %}>REJECTED</option>
+            </select>
+        </div>
+
+        <div class="field-group">
+            <label for="fact_type">Fact Type</label>
+            <input type="text" id="fact_type" name="fact_type" value="{{ fact_type }}" placeholder="e.g. decision">
+        </div>
+
+        <div class="field-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-filter">Filter</button>
+        </div>
+    </form>
+</div>
+
+{% if items %}
+<div class="card" style="margin-top: 1rem;">
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    {% if sort_by == "fact_type" %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=fact_type&amp;sort_desc={% if sort_desc %}false{% else %}true{% endif %}&amp;limit={{ limit }}&amp;offset=0">
+                            Fact Type
+                            <span class="sort-indicator">{{ "&#9650;"|safe if sort_desc else "&#9660;"|safe }}</span>
+                        </a>
+                    {% else %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=fact_type&amp;sort_desc=true&amp;limit={{ limit }}&amp;offset=0">
+                            Fact Type
+                        </a>
+                    {% endif %}
+                </th>
+                <th>
+                    {% if sort_by == "risk_level" %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=risk_level&amp;sort_desc={% if sort_desc %}false{% else %}true{% endif %}&amp;limit={{ limit }}&amp;offset=0">
+                            Risk Level
+                            <span class="sort-indicator">{{ "&#9650;"|safe if sort_desc else "&#9660;"|safe }}</span>
+                        </a>
+                    {% else %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=risk_level&amp;sort_desc=true&amp;limit={{ limit }}&amp;offset=0">
+                            Risk Level
+                        </a>
+                    {% endif %}
+                </th>
+                <th>
+                    {% if sort_by == "review_state" %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=review_state&amp;sort_desc={% if sort_desc %}false{% else %}true{% endif %}&amp;limit={{ limit }}&amp;offset=0">
+                            Review State
+                            <span class="sort-indicator">{{ "&#9650;"|safe if sort_desc else "&#9660;"|safe }}</span>
+                        </a>
+                    {% else %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=review_state&amp;sort_desc=true&amp;limit={{ limit }}&amp;offset=0">
+                            Review State
+                        </a>
+                    {% endif %}
+                </th>
+                <th>
+                    {% if sort_by == "dedup_count" %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=dedup_count&amp;sort_desc={% if sort_desc %}false{% else %}true{% endif %}&amp;limit={{ limit }}&amp;offset=0">
+                            Dedup Count
+                            <span class="sort-indicator">{{ "&#9650;"|safe if sort_desc else "&#9660;"|safe }}</span>
+                        </a>
+                    {% else %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=dedup_count&amp;sort_desc=true&amp;limit={{ limit }}&amp;offset=0">
+                            Dedup Count
+                        </a>
+                    {% endif %}
+                </th>
+                <th>
+                    {% if sort_by == "evidence_count" %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=evidence_count&amp;sort_desc={% if sort_desc %}false{% else %}true{% endif %}&amp;limit={{ limit }}&amp;offset=0">
+                            Evidence Count
+                            <span class="sort-indicator">{{ "&#9650;"|safe if sort_desc else "&#9660;"|safe }}</span>
+                        </a>
+                    {% else %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=evidence_count&amp;sort_desc=true&amp;limit={{ limit }}&amp;offset=0">
+                            Evidence Count
+                        </a>
+                    {% endif %}
+                </th>
+                <th>
+                    {% if sort_by == "created_at" %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=created_at&amp;sort_desc={% if sort_desc %}false{% else %}true{% endif %}&amp;limit={{ limit }}&amp;offset=0">
+                            Created At
+                            <span class="sort-indicator">{{ "&#9650;"|safe if sort_desc else "&#9660;"|safe }}</span>
+                        </a>
+                    {% else %}
+                        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by=created_at&amp;sort_desc=true&amp;limit={{ limit }}&amp;offset=0">
+                            Created At
+                        </a>
+                    {% endif %}
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td><a href="/ui/review-queue/{{ item.review_item_id }}?tenant_id={{ tenant_id }}">{{ item.fact_type }}</a></td>
+                <td>{{ item.risk_level.value }}</td>
+                <td>{{ item.review_state.value }}</td>
+                <td>{{ item.dedup_count }}</td>
+                <td>{{ item.evidence_count }}</td>
+                <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if has_prev %}
+        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by={{ sort_by }}&amp;sort_desc={{ sort_desc|lower }}&amp;limit={{ limit }}&amp;offset={{ offset - limit }}">&laquo; Previous</a>
+        {% else %}
+        <span style="color: #ccc;">&laquo; Previous</span>
+        {% endif %}
+
+        <span>Showing {{ offset + 1 }}&ndash;{{ offset + items|length }} of {{ total }}</span>
+
+        {% if has_next %}
+        <a href="?tenant_id={{ tenant_id }}&amp;risk_level={{ risk_level }}&amp;review_state={{ review_state }}&amp;fact_type={{ fact_type }}&amp;sort_by={{ sort_by }}&amp;sort_desc={{ sort_desc|lower }}&amp;limit={{ limit }}&amp;offset={{ offset + limit }}">Next &raquo;</a>
+        {% else %}
+        <span style="color: #ccc;">Next &raquo;</span>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card" style="margin-top: 1rem;">
+    <div class="empty-state">No review items found.</div>
+</div>
+{% endif %}
+{% endblock %}

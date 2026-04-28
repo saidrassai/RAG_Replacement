@@ -62,6 +62,7 @@ class ContextCompiler:
             score = node.serving_confidence
             items.append(
                 CompiledContextItem(
+                    tenant_id=tenant_id,
                     manifest_id=UUID(int=0),
                     ordinal=ordinal,
                     node_id=node.node_id,

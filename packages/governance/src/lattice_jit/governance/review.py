@@ -10,13 +10,15 @@ from lattice_jit.contracts import (
     PolicyBundle,
     ReviewItem,
     ReviewRiskLevel,
+    ReviewState,
 )
-from lattice_jit.core import stable_hash, utcnow
+from lattice_jit.core import NotFoundError, stable_hash, utcnow
 from lattice_jit.storage import StorageRepository
 
 from .adaptive_decay import apply_adaptive_decay
 from .audit import AuditService
 from .calibration import CalibrationService
+from .calibration import apply_calibration as apply_calibration_from_curve
 from .load_shedding import LoadSheddingService
 
 
@@ -71,6 +73,64 @@ class GovernanceService:
 
     def list_review_queue(self, tenant_id: UUID) -> list[ReviewItem]:
         return self.repository.list_review_items(tenant_id)
+
+    def approve_review(self, review_item_id: UUID, tenant_id: UUID) -> ReviewItem:
+        item = self.repository.get_review_item(review_item_id, tenant_id)
+        if item is None:
+            raise NotFoundError(f"Review item {review_item_id} was not found.")
+        now = utcnow()
+        updated = self.repository.update_review_item_state(
+            review_item_id, tenant_id, ReviewState.APPROVED, now
+        )
+        if updated is None:
+            raise NotFoundError(f"Review item {review_item_id} was not found.")
+        self.audit_service.record(
+            tenant_id=tenant_id,
+            event_type="review_approved",
+            resource_type="review_item",
+            resource_id=review_item_id,
+            payload={
+                "fact_type": updated.fact_type,
+                "risk_level": updated.risk_level.value,
+                "canonical_node_id": str(updated.canonical_node_id) if updated.canonical_node_id else None,
+            },
+        )
+        if updated.canonical_node_id is not None:
+            node = self.repository.get_node(updated.canonical_node_id)
+            if node is not None:
+                self.repository.upsert_nodes(
+                    [node.model_copy(update={"review_state": ReviewState.APPROVED, "updated_at": now})]
+                )
+        return updated
+
+    def reject_review(self, review_item_id: UUID, tenant_id: UUID) -> ReviewItem:
+        item = self.repository.get_review_item(review_item_id, tenant_id)
+        if item is None:
+            raise NotFoundError(f"Review item {review_item_id} was not found.")
+        now = utcnow()
+        updated = self.repository.update_review_item_state(
+            review_item_id, tenant_id, ReviewState.REJECTED, now
+        )
+        if updated is None:
+            raise NotFoundError(f"Review item {review_item_id} was not found.")
+        self.audit_service.record(
+            tenant_id=tenant_id,
+            event_type="review_rejected",
+            resource_type="review_item",
+            resource_id=review_item_id,
+            payload={
+                "fact_type": updated.fact_type,
+                "risk_level": updated.risk_level.value,
+                "canonical_node_id": str(updated.canonical_node_id) if updated.canonical_node_id else None,
+            },
+        )
+        if updated.canonical_node_id is not None:
+            node = self.repository.get_node(updated.canonical_node_id)
+            if node is not None:
+                self.repository.upsert_nodes(
+                    [node.model_copy(update={"review_state": ReviewState.REJECTED, "updated_at": now})]
+                )
+        return updated
 
     def record_snapshot_ingested(
         self,
@@ -139,6 +199,29 @@ class GovernanceService:
         if updated_nodes:
             self.repository.upsert_nodes(updated_nodes)
 
+        calibration_curve = self.calibration_service.compute_curve_for_tenant(
+            tenant_id, tenant_nodes
+        )
+        calibrated_nodes = 0
+        decayed_node_ids = {n.node_id for n in updated_nodes}
+        for node in tenant_nodes:
+            if node.node_id in decayed_node_ids:
+                continue
+            calibrated = apply_calibration_from_curve(node.serving_confidence, calibration_curve)
+            if calibrated != node.serving_confidence:
+                calibrated_nodes += 1
+                updated_nodes.append(
+                    node.model_copy(
+                        update={
+                            "serving_confidence": calibrated,
+                            "updated_at": now,
+                        }
+                    )
+                )
+
+        if updated_nodes:
+            self.repository.upsert_nodes(updated_nodes)
+
         high_risk_pending = sum(1 for item in pending if item.risk_level == ReviewRiskLevel.HIGH)
         summary = {
             "pending_review_items": len(pending),
@@ -146,6 +229,8 @@ class GovernanceService:
             "feedback_labels": len(feedback_labels),
             "nodes_scanned": len(tenant_nodes),
             "decayed_nodes": decayed_nodes,
+            "calibrated_nodes": calibrated_nodes,
+            "calibration_curve_segments": len(calibration_curve),
         }
         payload: dict[str, str | int | float | bool | None] = dict(summary)
         self.audit_service.record(

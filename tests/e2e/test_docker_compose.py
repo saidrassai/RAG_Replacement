@@ -171,6 +171,7 @@ def test_docker_compose_boots_local_stack() -> None:
 
         answer_response = httpx.get(
             f"http://127.0.0.1:{api_port}/v1/answers/{query_payload['answer_id']}",
+            params={"tenant_id": tenant_id},
             timeout=20.0,
         )
         assert answer_response.status_code == 200, answer_response.text

@@ -17,6 +17,7 @@ class SnapshotGitRequest(BaseModel):
 
 
 class SnapshotResponse(BaseModel):
+    tenant_id: UUID
     snapshot_id: UUID
     root_node_id: UUID
     status: SnapshotStatus

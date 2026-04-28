@@ -48,6 +48,7 @@ def test_repository_roundtrip(container) -> None:
         status=CompiledContextStatus.ACTIVE,
         items=[
             CompiledContextItem(
+                tenant_id=tenant_id,
                 manifest_id=uuid4(),
                 ordinal=0,
                 node_id=node.node_id,

@@ -73,6 +73,7 @@ class PolicyBundle(BaseModel):
 
 
 class CompiledContextItem(BaseModel):
+    tenant_id: UUID
     manifest_id: UUID
     ordinal: int
     node_id: UUID

@@ -88,6 +88,7 @@ class CompiledContextManifestOrm(Base):
 class CompiledContextItemOrm(Base):
     __tablename__ = "compiled_context_items"
 
+    tenant_id: Mapped[UUID] = mapped_column(index=True)
     manifest_id: Mapped[UUID] = mapped_column(
         ForeignKey("compiled_context_manifests.manifest_id"),
         primary_key=True,
