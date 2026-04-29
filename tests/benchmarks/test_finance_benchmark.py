@@ -316,6 +316,7 @@ def benchmark_container():
         "router_mode": "hybrid",
         "router_max_nodes": 20,
         "max_context_tokens": 24_000,
+        "context_item_char_budget": 12_000,
         "embedding_enabled": True,
         "embedding_model": "minishlab/potion-base-8M",
     })
