@@ -24,7 +24,7 @@ services:
       retries: 20
 
   opa:
-    image: openpolicyagent/opa:latest
+    image: openpolicyagent/opa:latest-debug
     command:
       - "run"
       - "--server"
@@ -35,7 +35,7 @@ services:
     ports:
       - "8181:8181"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/data/lattice_jit/policy"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8181/health"]
       interval: 5s
       timeout: 5s
       retries: 20
