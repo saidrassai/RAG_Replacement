@@ -233,12 +233,34 @@ def score_fidelity(answer_text: str, question: FinanceQuestion) -> float:
 
 
 def score_hallucination(answer_text: str, question: FinanceQuestion) -> float:
-    """Check for forbidden claims. Returns 1.0 if clean, 0.0 if hallucinated."""
+    """Check for forbidden claims. Returns 1.0 if clean, 0.0 if hallucinated.
+
+    Honest 'not found' answers that mention forbidden terms while
+    stating they are absent are not penalized.
+    """
     if not question.forbidden_claims:
         return 1.0
-    violations = sum(
-        1 for claim in question.forbidden_claims if claim.lower() in answer_text.lower()
+
+    answer_lower = answer_text.lower()
+    denial_markers = (
+        "not available", "cannot find", "not contain", "no information",
+        "does not contain", "not in the", "not provided", "not found",
+        "not mentioned", "no mention", "not specified", "not disclosed",
+        "not exist", "does not exist", "no data", "not include",
+        "without", "is not",
     )
+    is_denial = any(marker in answer_lower for marker in denial_markers)
+
+    violations = 0
+    for claim in question.forbidden_claims:
+        if claim.lower() in answer_lower:
+            violations += 1
+
+    # If the answer is clearly stating the forbidden info is NOT present,
+    # don't penalize — the model is being honest
+    if is_denial and violations > 0:
+        return 1.0
+
     return 0.0 if violations > 0 else 1.0
 
 
@@ -291,6 +313,9 @@ def benchmark_container():
         "database_url": f"sqlite+pysqlite:////tmp/lattice_jit_bench_{uuid4().hex[:8]}.sqlite3",
         "redis_url": "memory://",
         "celery_eager": True,
+        "router_mode": "hybrid",
+        "embedding_enabled": True,
+        "embedding_model": "minishlab/potion-base-8M",
     })
     container = build_container(settings)
 

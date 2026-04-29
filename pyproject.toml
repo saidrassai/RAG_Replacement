@@ -9,6 +9,7 @@ dependencies = []
 dev = [
   "fakeredis>=2.31.0",
   "httpx>=0.28.1",
+  "model2vec>=0.8.1",
   "mypy>=1.18.2",
   "pytest>=8.4.2",
   "pytest-cov>=7.0.0",
