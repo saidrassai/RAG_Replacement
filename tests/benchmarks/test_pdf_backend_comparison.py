@@ -33,7 +33,7 @@ COMPARISON_QUESTIONS = [
 
 def _run_benchmark(backend: str) -> dict:
     """Run benchmark with a specific PDF backend."""
-    tenant = UUID("00000000-0000-0000-0000-0000000c0de")
+    tenant = UUID("00000000-0000-0000-0000-00000000c0de")
     settings = get_settings()
     if DEEPSEEK_KEY:
         settings = settings.model_copy(update={
