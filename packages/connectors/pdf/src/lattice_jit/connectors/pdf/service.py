@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -15,20 +17,37 @@ from lattice_jit.contracts import (
 from lattice_jit.core import generate_id, stable_hash, utcnow
 from lattice_jit.storage import SourceSnapshotRecord, StorageRepository
 
+SECTION_HEADING_PATTERN = re.compile(
+    r"^(PART\s+[IVX]+|Item\s+\d+[A-Z]?\.|[A-Z][A-Z\s]{10,}|"
+    r"Note\s+\d+|Table of Contents|UNITED STATES.*COMMISSION|"
+    r"Management.s\s+Discussion|Quantitative\s+and\s+Qualitative|"
+    r"Financial\s+Statements|Consolidated\s+Balance|"
+    r"Consolidated\s+Statements|Notes\s+to\s+Consolidated|"
+    r"Report\s+of\s+Independent|Risk\s+Factors|Business\s*$|"
+    r"Selected\s+Financial|Market\s+Risk)",
+    re.MULTILINE | re.IGNORECASE,
+)
+
 
 @dataclass(slots=True)
 class PdfSnapshotService:
     repository: StorageRepository
 
-    def ingest(self, *, tenant_id: UUID, pdf_path: str, page_mode: str = "document") -> SnapshotResponse:
-        """Ingest a PDF file or directory of PDFs.
+    # ── Original pypdf2 ingestion (backward compatible) ─────────────────
 
-        Args:
-            tenant_id: Tenant identifier.
-            pdf_path: Path to a PDF file or directory of PDFs.
-            page_mode: 'document' (one node per file) or 'page' (one node per page).
-        """
-        # Create pending snapshot record
+    def ingest(self, *, tenant_id: UUID, pdf_path: str, page_mode: str = "document") -> SnapshotResponse:
+        return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode=page_mode, structured=False)
+
+    # ── Structured pdfplumber ingestion (table-preserving, section hierarchy) ─
+
+    def ingest_structured(self, *, tenant_id: UUID, pdf_path: str) -> SnapshotResponse:
+        return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode="page", structured=True)
+
+    # ── Shared implementation ──────────────────────────────────────────
+
+    def _ingest_impl(
+        self, *, tenant_id: UUID, pdf_path: str, page_mode: str, structured: bool
+    ) -> SnapshotResponse:
         snapshot_id = generate_id()
         root_node = KnowledgeNode(
             tenant_id=tenant_id,
@@ -56,7 +75,6 @@ class PdfSnapshotService:
         self.repository.create_source_snapshot(record)
         self.repository.upsert_nodes([root_node])
 
-        # Extract PDFs
         nodes = [root_node]
         edges: list[KnowledgeEdge] = []
         path = Path(pdf_path).expanduser().resolve()
@@ -67,87 +85,19 @@ class PdfSnapshotService:
         elif path.is_dir():
             pdf_files = sorted(path.rglob("*.pdf"))
         else:
-            pass  # No PDFs found
+            pass
 
         for pdf_file in pdf_files:
             try:
-                doc_text, pages = self._extract_pdf(pdf_file, page_mode)
+                if structured:
+                    self._ingest_structured_pdf(pdf_file, path, snapshot_id, tenant_id, nodes, edges)
+                else:
+                    doc_text, pages = self._extract_pdf_pypdf2(pdf_file)
+                    self._build_flat_nodes(
+                        pdf_file, path, doc_text, pages, snapshot_id, tenant_id, nodes, edges, page_mode
+                    )
             except Exception:
                 continue
-
-            source_uri = str(pdf_file)
-            if page_mode == "page" and pages:
-                doc_node = KnowledgeNode(
-                    tenant_id=tenant_id,
-                    snapshot_id=snapshot_id,
-                    node_type=NodeType.SOURCE,
-                    title=pdf_file.name,
-                    source_uri=source_uri,
-                    body_ptr=str(pdf_file.relative_to(path.parent if path.is_dir() else path.parent)),
-                    body_text=doc_text[:2000],
-                    content_hash=stable_hash(source_uri, doc_text[:2000]),
-                    source_confidence=1.0,
-                    serving_confidence=1.0,
-                )
-                nodes.append(doc_node)
-                edges.append(
-                    KnowledgeEdge(
-                        tenant_id=tenant_id,
-                        from_node_id=doc_node.node_id,
-                        to_node_id=root_node.node_id,
-                        edge_type=EdgeType.BELONGS_TO,
-                        evidence_spans=[{"path": source_uri}],
-                    )
-                )
-                for i, page_text in enumerate(pages):
-                    page_node = KnowledgeNode(
-                        tenant_id=tenant_id,
-                        snapshot_id=snapshot_id,
-                        node_type=NodeType.SECTION,
-                        title=f"{pdf_file.name} -- page {i + 1}",
-                        source_uri=source_uri,
-                        body_ptr=(
-                            f"{pdf_file.relative_to(path.parent) if path.is_dir() else pdf_file.name}"
-                            f"#page={i + 1}"
-                        ),
-                        body_text=page_text[:2000],
-                        content_hash=stable_hash(source_uri, str(i), page_text[:500]),
-                        source_confidence=1.0,
-                        serving_confidence=1.0,
-                    )
-                    nodes.append(page_node)
-                    edges.append(
-                        KnowledgeEdge(
-                            tenant_id=tenant_id,
-                            from_node_id=page_node.node_id,
-                            to_node_id=doc_node.node_id,
-                            edge_type=EdgeType.BELONGS_TO,
-                            evidence_spans=[{"path": source_uri, "page": i + 1}],
-                        )
-                    )
-            else:
-                doc_node = KnowledgeNode(
-                    tenant_id=tenant_id,
-                    snapshot_id=snapshot_id,
-                    node_type=NodeType.SECTION,
-                    title=pdf_file.name,
-                    source_uri=source_uri,
-                    body_ptr=str(pdf_file.relative_to(path.parent if path.is_dir() else path.parent)),
-                    body_text=doc_text[:2000],
-                    content_hash=stable_hash(source_uri, doc_text[:2000]),
-                    source_confidence=1.0,
-                    serving_confidence=1.0,
-                )
-                nodes.append(doc_node)
-                edges.append(
-                    KnowledgeEdge(
-                        tenant_id=tenant_id,
-                        from_node_id=doc_node.node_id,
-                        to_node_id=root_node.node_id,
-                        edge_type=EdgeType.BELONGS_TO,
-                        evidence_spans=[{"path": source_uri}],
-                    )
-                )
 
         self.repository.upsert_nodes(nodes)
         self.repository.upsert_edges(edges)
@@ -159,13 +109,160 @@ class PdfSnapshotService:
             status=SnapshotStatus.COMPLETED,
         )
 
-    def _extract_pdf(self, pdf_path: Path, page_mode: str) -> tuple[str, list[str]]:
+    # ── Structured PDF ingestion with pdfplumber ────────────────────────
+
+    def _ingest_structured_pdf(
+        self,
+        pdf_file: Path,
+        base_path: Path,
+        snapshot_id: UUID,
+        tenant_id: UUID,
+        nodes: list[KnowledgeNode],
+        edges: list[KnowledgeEdge],
+    ) -> None:
+        pages_data = self._extract_pdf_structured(pdf_file)
+        if not pages_data:
+            return
+
+        source_uri = str(pdf_file)
+        doc_name = pdf_file.name
+
+        # Document-level node
+        doc_node = KnowledgeNode(
+            tenant_id=tenant_id,
+            snapshot_id=snapshot_id,
+            node_type=NodeType.SOURCE,
+            title=doc_name,
+            source_uri=source_uri,
+            body_ptr=str(pdf_file.relative_to(base_path.parent if base_path.is_dir() else base_path.parent)),
+            body_text=pages_data[0]["text"][:3000] if pages_data else "",
+            content_hash=stable_hash(source_uri),
+            source_confidence=1.0,
+            serving_confidence=1.0,
+        )
+        doc_idx = len(nodes)
+        nodes.append(doc_node)
+        edges.append(KnowledgeEdge(
+            tenant_id=tenant_id, from_node_id=doc_node.node_id,
+            to_node_id=nodes[0].node_id, edge_type=EdgeType.BELONGS_TO,
+            evidence_spans=[{"path": source_uri}],
+        ))
+
+        # Detect sections from page headings
+        sections: dict[str, list[int]] = {}
+        current_section = "Front Matter"
+        for pd_ in pages_data:
+            page_num = pd_["page"]
+            text = pd_["text"]
+            heading_match = SECTION_HEADING_PATTERN.search(text[:500])
+            if heading_match:
+                current_section = heading_match.group(0).strip()[:120]
+            sections.setdefault(current_section, []).append(page_num)
+
+        # Create section-level nodes
+        section_nodes: dict[str, int] = {}
+        for sec_title, sec_pages in sections.items():
+            sec_text_parts = []
+            sec_tables = []
+            for pg in sec_pages:
+                pd_ = pages_data[pg - 1]  # 0-indexed
+                sec_text_parts.append(pd_["text"])
+                sec_tables.extend(pd_.get("tables", []))
+
+            sec_body = f"Pages: {min(sec_pages)}-{max(sec_pages)}\n\n" + "\n".join(sec_text_parts)
+            sec_metadata = {
+                "page_range": [min(sec_pages), max(sec_pages)],
+                "tables": sec_tables[:50],  # Cap table count
+            }
+
+            sec_node = KnowledgeNode(
+                tenant_id=tenant_id,
+                snapshot_id=snapshot_id,
+                node_type=NodeType.SECTION,
+                title=f"{doc_name} — {sec_title}",
+                source_uri=f"{source_uri}#pages={min(sec_pages)}-{max(sec_pages)}",
+                body_ptr=f"{doc_name}#section={sec_title[:80]}",
+                body_text=sec_body,
+                content_hash=stable_hash(source_uri, sec_title),
+                source_confidence=1.0,
+                serving_confidence=1.0,
+                metadata={"structured_section": True, "tables_json": json.dumps(sec_metadata["tables"])},
+            )
+            section_nodes[sec_title] = len(nodes)
+            nodes.append(sec_node)
+            edges.append(KnowledgeEdge(
+                tenant_id=tenant_id, from_node_id=sec_node.node_id,
+                to_node_id=doc_node.node_id, edge_type=EdgeType.BELONGS_TO,
+                evidence_spans=[{"path": source_uri, "section": sec_title[:80]}],
+            ))
+
+        # Create page-level nodes (children of sections)
+        for pd_ in pages_data:
+            page_num = pd_["page"]
+            # Find which section this page belongs to
+            parent_sec = "Front Matter"
+            for sec_title, sec_pages in sections.items():
+                if page_num in sec_pages:
+                    parent_sec = sec_title
+                    break
+
+            parent_node_idx = section_nodes.get(parent_sec, doc_idx)
+            tables_str = ""
+            if pd_.get("tables"):
+                tables_str = "\n\n--- TABLES ON THIS PAGE ---\n"
+                for t_idx, table in enumerate(pd_["tables"]):
+                    tables_str += f"\nTable {t_idx + 1}:\n"
+                    for row in table[:20]:  # Cap rows per table
+                        tables_str += " | ".join(str(cell or "") for cell in row) + "\n"
+
+            page_text = pd_["text"] + tables_str
+            page_node = KnowledgeNode(
+                tenant_id=tenant_id,
+                snapshot_id=snapshot_id,
+                node_type=NodeType.SECTION,
+                title=f"{doc_name} — page {page_num} [{parent_sec[:60]}]",
+                source_uri=source_uri,
+                body_ptr=f"{doc_name}#page={page_num}",
+                body_text=page_text,
+                content_hash=stable_hash(source_uri, str(page_num), pd_["text"][:500]),
+                source_confidence=1.0,
+                serving_confidence=1.0,
+                metadata={"page": page_num, "section": parent_sec[:80], "has_tables": bool(pd_.get("tables"))},
+            )
+            nodes.append(page_node)
+            edges.append(KnowledgeEdge(
+                tenant_id=tenant_id, from_node_id=page_node.node_id,
+                to_node_id=nodes[parent_node_idx].node_id, edge_type=EdgeType.BELONGS_TO,
+                evidence_spans=[{"path": source_uri, "page": page_num, "section": parent_sec[:80]}],
+            ))
+
+    # ── PDF Extraction ─────────────────────────────────────────────────
+
+    def _extract_pdf_structured(self, pdf_path: Path) -> list[dict]:
+        """Extract PDF pages with pdfplumber, preserving tables."""
+        try:
+            import pdfplumber
+        except ImportError as exc:
+            raise RuntimeError("pdfplumber is not installed. Install it with: pip install pdfplumber") from exc
+
+        pages_data = []
+        with pdfplumber.open(str(pdf_path)) as pdf:
+            for page_num, page in enumerate(pdf.pages, start=1):
+                text = page.extract_text() or ""
+                tables = page.extract_tables() or []
+                pages_data.append({
+                    "page": page_num,
+                    "text": text,
+                    "tables": tables,
+                })
+        return pages_data
+
+    def _extract_pdf_pypdf2(self, pdf_path: Path) -> tuple[str, list[str]]:
+        """Legacy extraction using pypdf2."""
         try:
             from pypdf2 import PdfReader
         except ImportError as exc:
-            raise RuntimeError(
-                "pypdf2 is not installed. Install it with: pip install pypdf2"
-            ) from exc
+            raise RuntimeError("pypdf2 is not installed. Install it with: pip install pypdf2") from exc
 
         reader = PdfReader(str(pdf_path))
         pages: list[str] = []
@@ -173,6 +270,56 @@ class PdfSnapshotService:
         for page in reader.pages:
             text = page.extract_text() or ""
             full_text_parts.append(text)
-            if page_mode == "page":
-                pages.append(text)
+            pages.append(text)
         return "\n".join(full_text_parts), pages
+
+    # ── Flat node builder (original behavior) ──────────────────────────
+
+    def _build_flat_nodes(
+        self, pdf_file: Path, base_path: Path, doc_text: str, pages: list[str],
+        snapshot_id: UUID, tenant_id: UUID, nodes: list[KnowledgeNode],
+        edges: list[KnowledgeEdge], page_mode: str,
+    ) -> None:
+        source_uri = str(pdf_file)
+        if page_mode == "page" and pages:
+            doc_node = KnowledgeNode(
+                tenant_id=tenant_id, snapshot_id=snapshot_id, node_type=NodeType.SOURCE,
+                title=pdf_file.name, source_uri=source_uri,
+                body_ptr=str(pdf_file.relative_to(base_path.parent if base_path.is_dir() else base_path.parent)),
+                body_text=doc_text[:2000], content_hash=stable_hash(source_uri, doc_text[:2000]),
+                source_confidence=1.0, serving_confidence=1.0,
+            )
+            nodes.append(doc_node)
+            edges.append(KnowledgeEdge(
+                tenant_id=tenant_id, from_node_id=doc_node.node_id,
+                to_node_id=nodes[0].node_id, edge_type=EdgeType.BELONGS_TO,
+                evidence_spans=[{"path": source_uri}],
+            ))
+            for i, page_text in enumerate(pages):
+                page_node = KnowledgeNode(
+                    tenant_id=tenant_id, snapshot_id=snapshot_id, node_type=NodeType.SECTION,
+                    title=f"{pdf_file.name} -- page {i + 1}", source_uri=source_uri,
+                    body_ptr=f"{pdf_file.name}#page={i + 1}", body_text=page_text[:2000],
+                    content_hash=stable_hash(source_uri, str(i), page_text[:500]),
+                    source_confidence=1.0, serving_confidence=1.0,
+                )
+                nodes.append(page_node)
+                edges.append(KnowledgeEdge(
+                    tenant_id=tenant_id, from_node_id=page_node.node_id,
+                    to_node_id=doc_node.node_id, edge_type=EdgeType.BELONGS_TO,
+                    evidence_spans=[{"path": source_uri, "page": i + 1}],
+                ))
+        else:
+            doc_node = KnowledgeNode(
+                tenant_id=tenant_id, snapshot_id=snapshot_id, node_type=NodeType.SECTION,
+                title=pdf_file.name, source_uri=source_uri,
+                body_ptr=str(pdf_file.relative_to(base_path.parent if base_path.is_dir() else base_path.parent)),
+                body_text=doc_text[:2000], content_hash=stable_hash(source_uri, doc_text[:2000]),
+                source_confidence=1.0, serving_confidence=1.0,
+            )
+            nodes.append(doc_node)
+            edges.append(KnowledgeEdge(
+                tenant_id=tenant_id, from_node_id=doc_node.node_id,
+                to_node_id=nodes[0].node_id, edge_type=EdgeType.BELONGS_TO,
+                evidence_spans=[{"path": source_uri}],
+            ))

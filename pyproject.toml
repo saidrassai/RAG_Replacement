@@ -129,6 +129,7 @@ module = [
   "model2vec",
   "openpyxl",
   "pypdf2",
+  "pdfplumber",
   "python-docx",
   "python-pptx",
   "requests",
