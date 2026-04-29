@@ -45,17 +45,6 @@ class QueryService:
         snapshot_nodes = self.repository.list_snapshot_nodes(snapshot.snapshot_id)
         selected_nodes = self.router.select(request.query, snapshot_nodes, request.subgraph_ids)
 
-        # Fix 4: Question decomposition for metrics questions
-        decomposed_query = request.query
-        if _is_metrics_question(request.query):
-            decomposed_query = _decompose_metrics_query(request.query)
-
-        # Fix 3: LLM re-ranking of candidate sections
-        if len(selected_nodes) > 10:
-            selected_nodes = _llm_rerank_sections(
-                self.model_provider, request.query, selected_nodes
-            ) or selected_nodes
-
         policy_bundle = self.policy_evaluator.evaluate(request.tenant_id, request.query, request.phase_b_mode)
         self.repository.store_policy_bundle(policy_bundle)
         self.governance_service.record_policy_evaluation(
@@ -65,7 +54,7 @@ class QueryService:
 
         manifest = self.compiler.compile(
             tenant_id=request.tenant_id,
-            query=decomposed_query,
+            query=request.query,
             selected_nodes=selected_nodes,
             policy_bundle=policy_bundle,
         )
