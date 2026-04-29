@@ -113,3 +113,51 @@ def test_manifest_invalidation_and_governance_scan(
     assert "feedback_labels" in scan
     assert "nodes_scanned" in scan
     assert "decayed_nodes" in scan
+
+
+# ── Worker Health + DLQ Tests ──────────────────────────────────────────────
+
+
+def test_worker_health_endpoint_returns_status(test_settings) -> None:
+    from lattice_jit.apps.api.main import create_app
+
+    app = create_app(settings=test_settings)
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app)
+    response = client.get("/v1/worker/health")
+    assert response.status_code == 200
+    payload = response.json()
+    assert "status" in payload
+    assert "broker" in payload
+
+
+def test_worker_dlq_endpoint_requires_tenant_id(test_settings) -> None:
+    from lattice_jit.apps.api.main import create_app, get_container
+    from lattice_jit.core import build_container
+
+    test_container = build_container(test_settings)
+    app = create_app(settings=test_settings)
+    app.dependency_overrides[get_container] = lambda: test_container
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app)
+    response = client.get("/v1/worker/dlq", params={"tenant_id": str(uuid4())})
+    assert response.status_code == 200
+    payload = response.json()
+    assert "items" in payload
+    assert "total" in payload
+
+
+def test_worker_tasks_have_retry_config() -> None:
+    from lattice_jit.apps.worker.tasks import (
+        continue_snapshot_ingest,
+        governance_scan,
+        invalidate_manifest,
+        phase_b_verify,
+    )
+
+    for task in (continue_snapshot_ingest, phase_b_verify, invalidate_manifest, governance_scan):
+        assert task.max_retries == 3
+        assert task.autoretry_for is not None
+        assert task.acks_late is True

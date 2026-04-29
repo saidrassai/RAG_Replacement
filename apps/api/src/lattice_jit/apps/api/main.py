@@ -91,6 +91,63 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
+    @application.post("/v1/snapshots/sharepoint", response_model=SnapshotResponse)
+    def create_sharepoint_snapshot(
+        tenant_id: UUID = Form(...),
+        site_url: str = Form(...),
+        drive_name: str = Form("Documents"),
+        folder_path: str = Form("/"),
+        container: AppContainer = Depends(get_container),
+    ) -> SnapshotResponse:
+        try:
+            from lattice_jit.connectors.sharepoint import SharePointSnapshotService
+        except ImportError as exc:
+            raise HTTPException(
+                status_code=501,
+                detail=(
+                    "SharePoint connector dependencies not installed. "
+                    "Install: requests, python-docx, openpyxl, python-pptx."
+                ),
+            ) from exc
+        service = SharePointSnapshotService(container.repository)
+        response = service.ingest(
+            tenant_id=tenant_id, site_url=site_url, drive_name=drive_name, folder_path=folder_path
+        )
+        container.governance_service.record_snapshot_ingested(
+            tenant_id=tenant_id,
+            snapshot_id=response.snapshot_id,
+            repo_path=site_url,
+            node_count=len(container.repository.list_snapshot_nodes(response.snapshot_id)),
+        )
+        return response
+
+    @application.post("/v1/snapshots/confluence", response_model=SnapshotResponse)
+    def create_confluence_snapshot(
+        tenant_id: UUID = Form(...),
+        confluence_url: str = Form(...),
+        space_key: str = Form(...),
+        page_limit: int = Form(500),
+        container: AppContainer = Depends(get_container),
+    ) -> SnapshotResponse:
+        try:
+            from lattice_jit.connectors.confluence import ConfluenceSnapshotService
+        except ImportError as exc:
+            raise HTTPException(
+                status_code=501,
+                detail="Confluence connector dependencies not installed. Install requests, html2text.",
+            ) from exc
+        service = ConfluenceSnapshotService(container.repository)
+        response = service.ingest(
+            tenant_id=tenant_id, confluence_url=confluence_url, space_key=space_key, page_limit=page_limit
+        )
+        container.governance_service.record_snapshot_ingested(
+            tenant_id=tenant_id,
+            snapshot_id=response.snapshot_id,
+            repo_path=f"{confluence_url}/spaces/{space_key}",
+            node_count=len(container.repository.list_snapshot_nodes(response.snapshot_id)),
+        )
+        return response
+
     @application.post("/v1/queries", response_model=QueryResponse)
     def create_query(
         request: QueryRequest,

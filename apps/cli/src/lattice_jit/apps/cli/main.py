@@ -77,6 +77,65 @@ def ingest_pdf(
     typer.echo(json.dumps(response.model_dump(mode="json"), indent=2))
 
 
+@ingest_app.command("sharepoint")
+def ingest_sharepoint(
+    tenant_id: UUID = typer.Option(...),
+    site_url: str = typer.Option(...),
+    drive_name: str = typer.Option("Documents"),
+    folder_path: str = typer.Option("/"),
+) -> None:
+    try:
+        from lattice_jit.connectors.sharepoint import SharePointSnapshotService
+    except ImportError:
+        typer.echo(
+            "SharePoint connector dependencies not installed. "
+            "Install: pip install requests python-docx openpyxl python-pptx",
+            err=True,
+        )
+        raise typer.Exit(code=1) from None
+    container = get_container()
+    service = SharePointSnapshotService(container.repository)
+    response = service.ingest(
+        tenant_id=tenant_id, site_url=site_url, drive_name=drive_name, folder_path=folder_path
+    )
+    container.governance_service.record_snapshot_ingested(
+        tenant_id=tenant_id,
+        snapshot_id=response.snapshot_id,
+        repo_path=site_url,
+        node_count=len(container.repository.list_snapshot_nodes(response.snapshot_id)),
+    )
+    typer.echo(json.dumps(response.model_dump(mode="json"), indent=2))
+
+
+@ingest_app.command("confluence")
+def ingest_confluence(
+    tenant_id: UUID = typer.Option(...),
+    confluence_url: str = typer.Option(...),
+    space_key: str = typer.Option(...),
+    page_limit: int = typer.Option(500),
+) -> None:
+    try:
+        from lattice_jit.connectors.confluence import ConfluenceSnapshotService
+    except ImportError:
+        typer.echo(
+            "Confluence connector dependencies not installed. Install: pip install requests html2text",
+            err=True,
+        )
+        raise typer.Exit(code=1) from None
+    container = get_container()
+    service = ConfluenceSnapshotService(container.repository)
+    response = service.ingest(
+        tenant_id=tenant_id, confluence_url=confluence_url, space_key=space_key, page_limit=page_limit
+    )
+    container.governance_service.record_snapshot_ingested(
+        tenant_id=tenant_id,
+        snapshot_id=response.snapshot_id,
+        repo_path=f"{confluence_url}/spaces/{space_key}",
+        node_count=len(container.repository.list_snapshot_nodes(response.snapshot_id)),
+    )
+    typer.echo(json.dumps(response.model_dump(mode="json"), indent=2))
+
+
 @app.command("query")
 def run_query(
     tenant_id: UUID = typer.Option(...),

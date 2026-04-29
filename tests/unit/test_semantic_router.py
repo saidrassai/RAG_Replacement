@@ -56,3 +56,53 @@ def test_unknown_mode_falls_back_to_baseline() -> None:
     selected = router.select("auth", [random, auth], None)
 
     assert selected[0].title == "auth.py"
+
+
+# ── Embedding Router Tests ──────────────────────────────────────────────────
+
+
+def test_hybrid_router_falls_back_to_lexical_when_embeddings_disabled() -> None:
+    from lattice_jit.runtime.routing import HybridSemanticRouter
+
+    router = HybridSemanticRouter(max_nodes=8)
+    node = KnowledgeNode(
+        tenant_id=UUID("00000000-0000-0000-0000-000000000001"),
+        node_type=NodeType.SECTION,
+        title="capital_requirements.md",
+        body_text="Basel III tier 1 capital ratio minimum requirements",
+        content_hash="hash-cr",
+        serving_confidence=1.0,
+    )
+    selected = router.select("capital adequacy rules", [node], None)
+    assert len(selected) == 1
+
+
+def test_cosine_similarity_identical() -> None:
+    from lattice_jit.runtime.embedding import cosine_similarity
+
+    vec = [1.0, 2.0, 3.0]
+    assert cosine_similarity(vec, vec) == 1.0
+
+
+def test_cosine_similarity_orthogonal() -> None:
+    from lattice_jit.runtime.embedding import cosine_similarity
+
+    assert cosine_similarity([1.0, 0.0], [0.0, 1.0]) == 0.0
+
+
+def test_cosine_similarity_empty_vectors() -> None:
+    from lattice_jit.runtime.embedding import cosine_similarity
+
+    assert cosine_similarity([], []) == 0.0
+
+
+# ── SemanticRouter backend_kwargs forwarding ────────────────────────────────
+
+
+def test_semantic_router_forwards_backend_kwargs_to_hybrid() -> None:
+    from lattice_jit.runtime.routing import HybridSemanticRouter, SemanticRouter
+
+    router = SemanticRouter(mode="hybrid", max_nodes=5)
+    backend = router._backend()
+    assert isinstance(backend, HybridSemanticRouter)
+    assert backend.max_nodes == 5

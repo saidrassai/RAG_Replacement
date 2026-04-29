@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import traceback
 from uuid import UUID
 
 from lattice_jit.core import build_container, get_settings
