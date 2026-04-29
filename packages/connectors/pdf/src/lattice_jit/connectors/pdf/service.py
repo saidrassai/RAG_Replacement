@@ -17,6 +17,48 @@ from lattice_jit.contracts import (
 from lattice_jit.core import generate_id, stable_hash, utcnow
 from lattice_jit.storage import SourceSnapshotRecord, StorageRepository
 
+
+def _format_tables_as_grid(tables: list) -> str:
+    """Convert pdfplumber table lists into readable ASCII grid format."""
+    if not tables:
+        return ""
+    parts = ["\n\n--- TABLES ---"]
+    for t_idx, table in enumerate(tables):
+        if not table:
+            continue
+        # Column widths
+        col_widths: list[int] = []
+        for row in table[:30]:  # Cap rows
+            for ci, cell in enumerate(row):
+                w = len(str(cell or ""))
+                if ci >= len(col_widths):
+                    col_widths.append(w)
+                else:
+                    col_widths[ci] = max(col_widths[ci], w)
+        # Ensure minimum width
+        col_widths = [max(w, 4) for w in col_widths]
+        # Separator
+        sep = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
+        parts.append(f"\nTable {t_idx + 1}:")
+        parts.append(sep)
+        # Header row
+        header = "|" + "|".join(f" {str(c or '').ljust(w)} " for c, w in zip(table[0], col_widths, strict=True)) + "|"
+        parts.append(header)
+        parts.append(sep)
+        # Data rows
+        for row in table[1:30]:
+            cells = []
+            for ci, cell in enumerate(row):
+                w = col_widths[ci] if ci < len(col_widths) else 8
+                cells.append(f" {str(cell or '').ljust(w)} ")
+            # Pad missing columns
+            while len(cells) < len(col_widths):
+                cells.append(f" {'':<{col_widths[len(cells)]}} ")
+            parts.append("|" + "|".join(cells) + "|")
+        parts.append(sep)
+    return "\n".join(parts)
+
+
 SECTION_HEADING_PATTERN = re.compile(
     r"^(PART\s+[IVX]+|Item\s+\d+[A-Z]?\.|[A-Z][A-Z\s]{10,}|"
     r"Note\s+\d+|Table of Contents|UNITED STATES.*COMMISSION|"
@@ -213,14 +255,7 @@ class PdfSnapshotService:
                     break
 
             parent_node_idx = section_nodes.get(parent_sec, doc_idx)
-            tables_str = ""
-            if pd_.get("tables"):
-                tables_str = "\n\n--- TABLES ON THIS PAGE ---\n"
-                for t_idx, table in enumerate(pd_["tables"]):
-                    tables_str += f"\nTable {t_idx + 1}:\n"
-                    for row in table[:20]:  # Cap rows per table
-                        tables_str += " | ".join(str(cell or "") for cell in row) + "\n"
-
+            tables_str = _format_tables_as_grid(pd_.get("tables", []))
             page_text = pd_["text"] + tables_str
             page_node = KnowledgeNode(
                 tenant_id=tenant_id,

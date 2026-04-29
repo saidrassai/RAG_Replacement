@@ -47,9 +47,36 @@ class ContextCompiler:
             )
             return persisted
 
+        # Section expansion: include sibling pages from same SECTION parent
+        expanded_nodes = list(selected_nodes)
+        seen_ids = {n.node_id for n in expanded_nodes}
+        for node in selected_nodes:
+            section_meta = node.metadata.get("section", "") if node.metadata else ""
+            if not section_meta:
+                continue
+            try:
+                edges = self.repository.list_edges_for_nodes([node.node_id])
+                parent_ids = [e.to_node_id for e in edges if e.edge_type.value == "belongs_to"]
+                if parent_ids:
+                    # Find siblings — all nodes that BELONG_TO the same parent
+                    sibling_edges = self.repository.list_edges_for_nodes(parent_ids)
+                    sibling_ids = {
+                        e.from_node_id for e in sibling_edges
+                        if e.edge_type.value == "belongs_to" and e.to_node_id in parent_ids
+                    }
+                    siblings = self.repository.get_nodes_by_ids(sibling_ids - seen_ids)
+                    # Only include siblings with same section metadata
+                    for sib in siblings:
+                        sib_section = sib.metadata.get("section", "") if sib.metadata else ""
+                        if sib_section == section_meta:
+                            expanded_nodes.append(sib)
+                            seen_ids.add(sib.node_id)
+            except Exception:
+                pass
+
         items: list[CompiledContextItem] = []
         actual_tokens = 0
-        for ordinal, node in enumerate(selected_nodes):
+        for ordinal, node in enumerate(expanded_nodes):
             snippet_source = (node.body_text or node.title).strip()
             snippet = snippet_source[: self.settings.context_item_char_budget]
             token_count = max(1, len(snippet) // 4)

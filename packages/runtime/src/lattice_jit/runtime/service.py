@@ -44,6 +44,18 @@ class QueryService:
 
         snapshot_nodes = self.repository.list_snapshot_nodes(snapshot.snapshot_id)
         selected_nodes = self.router.select(request.query, snapshot_nodes, request.subgraph_ids)
+
+        # Fix 4: Question decomposition for metrics questions
+        decomposed_query = request.query
+        if _is_metrics_question(request.query):
+            decomposed_query = _decompose_metrics_query(request.query)
+
+        # Fix 3: LLM re-ranking of candidate sections
+        if len(selected_nodes) > 10:
+            selected_nodes = _llm_rerank_sections(
+                self.model_provider, request.query, selected_nodes
+            ) or selected_nodes
+
         policy_bundle = self.policy_evaluator.evaluate(request.tenant_id, request.query, request.phase_b_mode)
         self.repository.store_policy_bundle(policy_bundle)
         self.governance_service.record_policy_evaluation(
@@ -53,7 +65,7 @@ class QueryService:
 
         manifest = self.compiler.compile(
             tenant_id=request.tenant_id,
-            query=request.query,
+            query=decomposed_query,
             selected_nodes=selected_nodes,
             policy_bundle=policy_bundle,
         )
@@ -101,3 +113,116 @@ class QueryService:
         if answer.tenant_id != tenant_id:
             raise NotFoundError(f"Answer {answer_id} was not found.")
         return answer
+
+
+# ── Fix 3: LLM Section Re-Ranking ──────────────────────────────────────────
+
+
+def _llm_rerank_sections(model_provider, query: str, nodes: list) -> list | None:
+    """Use LLM to select relevant sections from top candidates.
+
+    Sends section summaries to the model and asks which sections
+    are relevant to the query. Returns filtered node list or None
+    if re-ranking fails (caller falls back to original nodes).
+    """
+    try:
+        sections: list[tuple[int, str, str]] = []
+        for idx, node in enumerate(nodes[:50]):
+            title = node.title or ""
+            snippet = (node.body_text or "")[:300]
+            sections.append((idx, title, snippet))
+
+        if len(sections) < 3:
+            return None
+
+        section_list = "\n".join(
+            f"[{i + 1}] {title}\n   {snippet[:150]}"
+            for i, (_, title, snippet) in enumerate(sections[:30])
+        )
+
+        prompt = (
+            f"Query: {query}\n\n"
+            f"Below are {min(30, len(sections))} candidate document sections. "
+            "Select the sections (by number) that contain information "
+            "relevant to answering the query. Return ONLY numbers separated "
+            "by commas, e.g.: 2,5,7,12\n\n"
+            f"{section_list}\n\n"
+            "Relevant section numbers:"
+        )
+
+        # Use a small manifest to call the model
+        from uuid import uuid4
+
+        from lattice_jit.contracts import (
+            CompiledContextItem,
+            CompiledContextManifest,
+            CompiledContextRole,
+            CompiledContextStatus,
+            KnowledgeNode,
+            NodeType,
+            PolicyBundle,
+        )
+
+        dummy_node = KnowledgeNode(
+            tenant_id=uuid4(), node_type=NodeType.SECTION,
+            title="rerank", content_hash="rerank", serving_confidence=1.0,
+        )
+        dummy_manifest = CompiledContextManifest(
+            tenant_id=uuid4(), query_hash="rerank",
+            policy_bundle_id=uuid4(), context_hash="rerank",
+            budget_tokens=1000, actual_tokens=50,
+            status=CompiledContextStatus.ACTIVE,
+            items=[CompiledContextItem(
+                tenant_id=uuid4(), manifest_id=uuid4(),
+                ordinal=0, node_id=dummy_node.node_id,
+                role=CompiledContextRole.EVIDENCE,
+                token_count=50, score=1.0, snippet=section_list,
+            )],
+        )
+        dummy_policy = PolicyBundle(
+            tenant_id=uuid4(), query_class="general",
+            tool_allowlist=[], redaction_rules=[], max_tokens=4000,
+            phase_b_required=False, human_gate_required=False,
+            opa_decision_hash="rerank",
+        )
+
+        answer = model_provider.generate(prompt, dummy_manifest, [dummy_node], dummy_policy)
+        import re
+        numbers = [int(n) for n in re.findall(r"\d+", answer) if 1 <= int(n) <= len(sections)]
+
+        if not numbers:
+            return None
+
+        selected_indices = {n - 1 for n in numbers}
+        return [node for idx, node in enumerate(nodes) if idx in selected_indices]
+    except Exception:
+        return None
+
+
+# ── Fix 4: Metrics Question Decomposition ──────────────────────────────────
+
+
+METRICS_KEYWORDS = (
+    "ratio", "margin", "DPO", "DSO", "DIO", "turnover",
+    "return on", "ROE", "ROA", "growth", "change in",
+    "percent", "percentage", "basis points", "bps",
+    "calculate", "compute", "per share",
+)
+
+
+def _is_metrics_question(query: str) -> bool:
+    return any(kw.lower() in query.lower() for kw in METRICS_KEYWORDS)
+
+
+def _decompose_metrics_query(query: str) -> str:
+    """Decompose a metrics question to help the model extract needed values first.
+
+    Adds instructions to identify the values needed for computation
+    before answering the question.
+    """
+    return (
+        f"{query}\n\n"
+        "[Instructions: First identify the specific values needed to answer this question "
+        "from the context. If a computation is required, show the formula and the values "
+        "used. If the exact values are not in the context, state so clearly.]"
+    )
