@@ -132,16 +132,7 @@ class HybridSemanticRouter:
 
             baseline_raw = baseline_by_id.get(node.node_id, 0.0)
             baseline_score = baseline_raw / max_baseline if max_baseline > 0 else 0.0
-            score = 0.60 * semantic_score + 0.25 * baseline_score + 0.10 * node.serving_confidence
-
-            # Financial concept boost: nodes containing SEC filing terminology
-            # get bonus points when the query involves financial concepts
-            boost_terms = _get_financial_boost_terms(query)
-            if boost_terms:
-                node_text_lower = node_text.lower()
-                term_hits = sum(1 for t in boost_terms if t in node_text_lower)
-                if term_hits > 0:
-                    score += 0.05 * min(term_hits, 5)  # up to +0.25 for 5+ term matches
+            score = 0.65 * semantic_score + 0.25 * baseline_score + 0.10 * node.serving_confidence
 
             if semantic_score > 0 or baseline_raw > 0 or node.node_type.value == "source":
                 scored.append((node, score))
