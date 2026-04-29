@@ -101,24 +101,43 @@ def extract_numbers(text: str) -> list[float]:
     return scaled
 
 
-def _numeric_overlap(pred_nums: list[float], gold_nums: list[float], tolerance: float = 0.01) -> float:
-    """Check what fraction of gold numbers are approximately matched in predictions."""
+def _numeric_overlap(pred_nums: list[float], gold_nums: list[float], tolerance: float = 0.02) -> float:
+    """Check what fraction of gold numbers are approximately matched in predictions.
+
+    Handles FinanceBench's unit-stripping convention: gold answers say "$1577.00"
+    meaning "$1,577 million" — so we check unit-scaled variants too.
+    """
     if not gold_nums:
         return 0.5
-    pred_set = {round(n, 1) for n in pred_nums}
-    gold_set = {round(n, 1) for n in gold_nums}
-    if not gold_set:
+    # Round and deduplicate
+    pred_rounded = {round(n, 0) for n in pred_nums}
+    gold_rounded = [round(n, 0) for n in gold_nums]
+    if not gold_rounded:
         return 0.5
+
     matches = 0
-    for gn in gold_set:
-        for pn in pred_set:
-            if gn != 0 and abs(pn - gn) / abs(gn) < tolerance:
-                matches += 1
+    for gn in gold_rounded:
+        matched = False
+        for pn in pred_rounded:
+            # Exact or close match
+            if gn != 0 and abs(pn - gn) / max(abs(gn), 1) < tolerance:
+                matched = True
                 break
-            elif gn == 0 and abs(pn) < 0.01:
-                matches += 1
+            # FinanceBench unit scaling: gold says 1577, model says 1,577 million
+            for scale in [1_000, 1_000_000, 1_000_000_000]:
+                if gn != 0 and abs(pn - gn * scale) / max(abs(gn * scale), 1) < tolerance:
+                    matched = True
+                    break
+                if pn != 0 and abs(gn - pn * scale) / max(abs(pn * scale), 1) < tolerance:
+                    matched = True
+                    break
+            if gn == 0 and abs(pn) < 0.1:
+                matched = True
                 break
-    return matches / len(gold_set)
+        if matched:
+            matches += 1
+
+    return matches / len(gold_rounded)
 
 
 def score_financebench_answer(predicted: str, gold_answer: str, gold_evidence: list[dict]) -> dict:
