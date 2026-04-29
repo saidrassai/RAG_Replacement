@@ -31,7 +31,21 @@ def get_container() -> AppContainer:
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    application = FastAPI(title="Lattice-JIT Compiler v3.1")
+    application = FastAPI(
+        title="Lattice-JIT Compiler v3.1",
+        version="0.3.0",
+        openapi_tags=[
+            {"name": "health", "description": "Health checks"},
+            {"name": "snapshots", "description": "Ingestion from Git, PDF, SharePoint, Confluence"},
+            {"name": "queries", "description": "Policy-enforced knowledge graph queries"},
+            {"name": "answers", "description": "Answers with provenance and confidence"},
+            {"name": "review", "description": "Human-in-the-loop review queue"},
+            {"name": "audit", "description": "Audit trail viewer and export"},
+            {"name": "opa", "description": "OPA sidecar health and status"},
+            {"name": "worker", "description": "Worker health, DLQ, and task monitoring"},
+            {"name": "ui", "description": "Server-rendered operator console"},
+        ],
+    )
 
     _settings = settings or get_settings()
     _api_keys = parse_api_keys(_settings.auth_api_keys)
@@ -56,11 +70,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         name="static",
     )
 
-    @application.get("/healthz")
+    @application.get("/healthz", tags=["health"])
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
 
-    @application.post("/v1/snapshots/git", response_model=SnapshotResponse)
+    @application.post("/v1/snapshots/git", response_model=SnapshotResponse, tags=["snapshots"])
     def create_git_snapshot(
         request: SnapshotGitRequest,
         container: AppContainer = Depends(get_container),
@@ -74,7 +88,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @application.post("/v1/snapshots/pdf", response_model=SnapshotResponse)
+    @application.post("/v1/snapshots/pdf", response_model=SnapshotResponse, tags=["snapshots"])
     def create_pdf_snapshot(
         tenant_id: UUID = Form(...),
         pdf_path: str = Form(...),
@@ -91,7 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @application.post("/v1/snapshots/sharepoint", response_model=SnapshotResponse)
+    @application.post("/v1/snapshots/sharepoint", response_model=SnapshotResponse, tags=["snapshots"])
     def create_sharepoint_snapshot(
         tenant_id: UUID = Form(...),
         site_url: str = Form(...),
@@ -121,7 +135,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @application.post("/v1/snapshots/confluence", response_model=SnapshotResponse)
+    @application.post("/v1/snapshots/confluence", response_model=SnapshotResponse, tags=["snapshots"])
     def create_confluence_snapshot(
         tenant_id: UUID = Form(...),
         confluence_url: str = Form(...),
@@ -148,7 +162,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @application.post("/v1/queries", response_model=QueryResponse)
+    @application.post("/v1/queries", response_model=QueryResponse, tags=["queries"])
     def create_query(
         request: QueryRequest,
         container: AppContainer = Depends(get_container),
@@ -158,7 +172,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except NotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @application.get("/v1/answers/{answer_id}", response_model=AnswerEnvelope)
+    @application.get("/v1/answers/{answer_id}", response_model=AnswerEnvelope, tags=["answers"])
     def get_answer(
         answer_id: UUID,
         tenant_id: UUID,
@@ -169,14 +183,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except NotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @application.get("/v1/review-queue", response_model=ReviewQueueResponse)
+    @application.get("/v1/review-queue", response_model=ReviewQueueResponse, tags=["review"])
     def get_review_queue(
         tenant_id: UUID,
         container: AppContainer = Depends(get_container),
     ) -> ReviewQueueResponse:
         return ReviewQueueResponse(items=container.governance_service.list_review_queue(tenant_id))
 
-    @application.post("/v1/review-queue/{review_item_id}/approve", response_model=ReviewItem)
+    @application.post("/v1/review-queue/{review_item_id}/approve", response_model=ReviewItem, tags=["review"])
     def approve_review(
         review_item_id: UUID,
         tenant_id: UUID,
@@ -187,7 +201,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except NotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @application.post("/v1/review-queue/{review_item_id}/reject", response_model=ReviewItem)
+    @application.post("/v1/review-queue/{review_item_id}/reject", response_model=ReviewItem, tags=["review"])
     def reject_review(
         review_item_id: UUID,
         tenant_id: UUID,
@@ -198,13 +212,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except NotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @application.get("/v1/opa/health")
+    @application.get("/v1/opa/health", tags=["opa"])
     def opa_health(
         container: AppContainer = Depends(get_container),
     ) -> dict[str, str]:
         return container.query_service.policy_evaluator.health_check()
 
-    @application.get("/v1/audit-events")
+    @application.get("/v1/audit-events", tags=["audit"])
     def list_audit_events(
         tenant_id: UUID,
         event_type: str | None = Query(None),
@@ -235,7 +249,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "offset": offset,
         }
 
-    @application.get("/v1/audit-events/export")
+    @application.get("/v1/audit-events/export", tags=["audit"])
     def export_audit_events(
         tenant_id: UUID,
         format: str = Query("json"),
@@ -382,7 +396,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             status_code=303,
         )
 
-    @application.get("/v1/worker/health")
+    @application.get("/v1/worker/health", tags=["worker"])
     def worker_health() -> dict[str, str]:
         try:
             import redis
@@ -394,7 +408,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except Exception:
             return {"status": "degraded", "broker": "disconnected"}
 
-    @application.get("/v1/worker/dlq")
+    @application.get("/v1/worker/dlq", tags=["worker"])
     def get_dlq(
         tenant_id: UUID,
         limit: int = Query(50, ge=1, le=500),
