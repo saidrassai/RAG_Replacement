@@ -314,6 +314,8 @@ def benchmark_container():
         "redis_url": "memory://",
         "celery_eager": True,
         "router_mode": "hybrid",
+        "router_max_nodes": 20,
+        "max_context_tokens": 24_000,
         "embedding_enabled": True,
         "embedding_model": "minishlab/potion-base-8M",
     })
