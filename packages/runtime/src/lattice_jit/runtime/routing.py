@@ -13,6 +13,66 @@ if TYPE_CHECKING:
     from .embedding import EmbeddingService
 
 
+def _get_financial_boost_terms(query: str) -> list[str]:
+    """Get SEC filing search terms for financial concepts in the query.
+
+    Returns a list of terms that should boost a node's score if found
+    in the node text. Does NOT modify the query — used only for scoring.
+    """
+    terms: list[str] = []
+    ql = query.lower()
+    # Mapping: query keywords → SEC filing terms to look for in nodes
+    mappings = {
+        "capital expenditure": ["capital expenditures", "property plant and equipment", "purchases of property"],
+        "capex": ["capital expenditures", "purchases of property"],
+        "fixed asset turnover": ["property plant and equipment net", "net sales"],
+        "dpo": ["accounts payable", "cost of goods sold", "cost of sales"],
+        "days payable": ["accounts payable", "cost of goods sold"],
+        "quick ratio": ["cash and cash equivalents", "current assets", "current liabilities"],
+        "liquidity": ["liquidity and capital resources", "current assets", "current liabilities"],
+        "working capital": ["current assets", "current liabilities"],
+        "effective tax rate": ["income tax expense", "income before income taxes"],
+        "return on equity": ["net income", "shareholders equity", "stockholders equity"],
+        "roe": ["net income", "shareholders equity"],
+        "return on assets": ["net income", "total assets"],
+        "roa": ["net income", "total assets"],
+        "restructuring": ["restructuring charges", "restructuring and related"],
+        "eps": ["earnings per share", "diluted earnings per share"],
+        "dividend": ["dividends declared", "dividends per share", "share repurchase"],
+        "cyclical": ["cyclical", "seasonal", "subject to fluctuation"],
+        "ceo": ["chief executive officer", "executive officer", "appointed"],
+        "debt securities": ["senior notes", "notes", "registered under"],
+        "cybersecurity": ["cybersecurity", "information security", "data breach"],
+        "net zero": ["net-zero", "greenhouse gas", "emissions"],
+        "sustainable": ["sustainable finance", "green", "esg", "climate"],
+        "var": ["value-at-risk", "var", "trading portfolio"],
+        "diluted eps": ["diluted earnings per share", "earnings per share"],
+        "net income": ["net income", "net earnings", "consolidated net income"],
+        "revenue": ["net sales", "total revenue", "revenue"],
+        "asset size": ["total assets", "total consolidated assets"],
+        "employees": ["employees", "full-time", "workforce"],
+        "branches": ["branches", "retail branches", "locations"],
+        "cet1": ["common equity tier 1", "cet1", "risk-weighted assets"],
+        "leverage ratio": ["leverage ratio", "tier 1 leverage", "supplementary leverage"],
+        "lcr": ["liquidity coverage ratio", "high-quality liquid assets", "hqla"],
+        "nsfr": ["net stable funding ratio", "available stable funding"],
+        "g-sib": ["global systemically important", "g-sib", "surcharge"],
+        "basel iii": ["basel iii", "risk-weighted assets", "capital conservation buffer"],
+        "sec rule": ["rule 17a-4", "sec", "securities and exchange commission"],
+        "gdpr": ["gdpr", "general data protection", "personal data", "data subject"],
+        "sox": ["sarbanes-oxley", "internal control", "section 302", "section 404"],
+        "pci": ["pci dss", "cardholder data", "payment card industry"],
+        "kyc": ["know your customer", "customer due diligence", "cdd"],
+        "audit log": ["audit log", "audit trail", "log retention"],
+        "password": ["password", "authentication", "multi-factor", "mfa"],
+        "lockout": ["lockout", "failed attempts", "account lock"],
+    }
+    for kw, sec_terms in mappings.items():
+        if kw in ql:
+            terms.extend(sec_terms[:5])
+    return list(dict.fromkeys(terms))  # deduplicate, preserve order
+
+
 class RouterBackend(Protocol):
     def select(self, query: str, nodes: list[KnowledgeNode], subgraph_ids: list[UUID] | None) -> list[KnowledgeNode]:
         ...
@@ -72,7 +132,16 @@ class HybridSemanticRouter:
 
             baseline_raw = baseline_by_id.get(node.node_id, 0.0)
             baseline_score = baseline_raw / max_baseline if max_baseline > 0 else 0.0
-            score = 0.65 * semantic_score + 0.25 * baseline_score + 0.10 * node.serving_confidence
+            score = 0.60 * semantic_score + 0.25 * baseline_score + 0.10 * node.serving_confidence
+
+            # Financial concept boost: nodes containing SEC filing terminology
+            # get bonus points when the query involves financial concepts
+            boost_terms = _get_financial_boost_terms(query)
+            if boost_terms:
+                node_text_lower = node_text.lower()
+                term_hits = sum(1 for t in boost_terms if t in node_text_lower)
+                if term_hits > 0:
+                    score += 0.05 * min(term_hits, 5)  # up to +0.25 for 5+ term matches
 
             if semantic_score > 0 or baseline_raw > 0 or node.node_type.value == "source":
                 scored.append((node, score))
