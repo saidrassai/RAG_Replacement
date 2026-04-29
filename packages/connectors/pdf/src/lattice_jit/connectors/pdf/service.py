@@ -43,10 +43,14 @@ class PdfSnapshotService:
     def ingest_structured(self, *, tenant_id: UUID, pdf_path: str) -> SnapshotResponse:
         return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode="page", structured=True)
 
+    def ingest_docling(self, *, tenant_id: UUID, pdf_path: str) -> SnapshotResponse:
+        """Ingest using IBM Docling for layout-aware extraction."""
+        return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode="page", structured="docling")
+
     # ── Shared implementation ──────────────────────────────────────────
 
     def _ingest_impl(
-        self, *, tenant_id: UUID, pdf_path: str, page_mode: str, structured: bool
+        self, *, tenant_id: UUID, pdf_path: str, page_mode: str, structured: bool | str
     ) -> SnapshotResponse:
         snapshot_id = generate_id()
         root_node = KnowledgeNode(
@@ -89,7 +93,9 @@ class PdfSnapshotService:
 
         for pdf_file in pdf_files:
             try:
-                if structured:
+                if structured == "docling":
+                    self._ingest_docling_pdf(pdf_file, path, snapshot_id, tenant_id, nodes, edges)
+                elif structured:
                     self._ingest_structured_pdf(pdf_file, path, snapshot_id, tenant_id, nodes, edges)
                 else:
                     doc_text, pages = self._extract_pdf_pypdf2(pdf_file)
@@ -256,6 +262,59 @@ class PdfSnapshotService:
                     "tables": tables,
                 })
         return pages_data
+
+    def _ingest_docling_pdf(
+        self, pdf_file: Path, base_path: Path, snapshot_id: UUID,
+        tenant_id: UUID, nodes: list[KnowledgeNode], edges: list[KnowledgeEdge],
+    ) -> None:
+        """Ingest PDF using docling: one document node with full markdown."""
+        pages_data = self._extract_pdf_docling(pdf_file)
+        if not pages_data:
+            return
+        source_uri = str(pdf_file)
+        doc_node = KnowledgeNode(
+            tenant_id=tenant_id, snapshot_id=snapshot_id, node_type=NodeType.SOURCE,
+            title=pdf_file.name, source_uri=source_uri,
+            body_ptr=str(pdf_file.relative_to(base_path.parent if base_path.is_dir() else base_path.parent)),
+            body_text=pages_data[0]["text"][:3000],
+            content_hash=stable_hash(source_uri, pages_data[0]["text"][:2000]),
+            source_confidence=1.0, serving_confidence=1.0,
+        )
+        nodes.append(doc_node)
+        edges.append(KnowledgeEdge(
+            tenant_id=tenant_id, from_node_id=doc_node.node_id,
+            to_node_id=nodes[0].node_id, edge_type=EdgeType.BELONGS_TO,
+            evidence_spans=[{"path": source_uri}],
+        ))
+        section_node = KnowledgeNode(
+            tenant_id=tenant_id, snapshot_id=snapshot_id, node_type=NodeType.SECTION,
+            title=f"{pdf_file.name} — Full Document (Docling)",
+            source_uri=source_uri,
+            body_ptr=f"{pdf_file.name}#docling",
+            body_text=pages_data[0]["text"],
+            content_hash=stable_hash(source_uri, "docling", pages_data[0]["text"][:500]),
+            source_confidence=1.0, serving_confidence=1.0,
+        )
+        nodes.append(section_node)
+        edges.append(KnowledgeEdge(
+            tenant_id=tenant_id, from_node_id=section_node.node_id,
+            to_node_id=doc_node.node_id, edge_type=EdgeType.BELONGS_TO,
+            evidence_spans=[{"path": source_uri, "extractor": "docling"}],
+        ))
+
+    # ── PDF Extraction Backends ──────────────────────────────────────────
+
+    def _extract_pdf_docling(self, pdf_path: Path) -> list[dict]:
+        """Extract PDF with IBM Docling — one page node with full markdown + table structure."""
+        try:
+            from docling.document_converter import DocumentConverter
+        except ImportError as exc:
+            raise RuntimeError("docling is not installed. Install it with: pip install docling") from exc
+
+        converter = DocumentConverter()
+        result = converter.convert(str(pdf_path))
+        full_md = result.document.export_to_markdown()
+        return [{"page": 1, "text": full_md, "tables": []}]
 
     def _extract_pdf_pypdf2(self, pdf_path: Path) -> tuple[str, list[str]]:
         """Legacy extraction using pypdf2."""
