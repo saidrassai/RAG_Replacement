@@ -9,7 +9,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -26,9 +25,9 @@ DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
 COMPARISON_QUESTIONS = [
     ("3M_2018_10K.pdf", "What is the FY2018 capital expenditure amount (in USD millions) for 3M?", "$1577.00"),
-    ("AES_2022_10K.pdf", "What is the quantity of restructuring costs directly outlined in AES Corporation FY2022 10-K?", "restructuring"),
-    ("AMERICANEXPRESS_2022_10K.pdf", "Which debt securities are registered to trade on a national securities exchange by American Express in FY2022?", "registered"),
-    ("BESTBUY_2024Q2_10Q.pdf", "Was there any drop in Cash & Cash equivalents between FY 2023 and Q2 of FY2024 for Best Buy?", "drop"),
+    ("AES_2022_10K.pdf", "What quantity of restructuring costs are directly outlined in AES FY2022 10-K?", "restructuring"),
+    ("AMERICANEXPRESS_2022_10K.pdf", "Which debt securities are registered on a national exchange in FY2022?", "registered"),
+    ("BESTBUY_2024Q2_10Q.pdf", "Was there any drop in Cash between FY 2023 and Q2 FY2024 for Best Buy?", "drop"),
 ]
 
 
@@ -99,7 +98,7 @@ class TestBackendComparison:
         print(f"{'docling':<15} {dr['hits']:>10} {dr['total']:>6} {dr['hits']/dr['total']:>7.0%}")
         print("-" * 45)
         print("\nPer-question breakdown:")
-        for i, (pq, dq) in enumerate(zip(pr["details"], dr["details"])):
+        for i, (pq, dq) in enumerate(zip(pr["details"], dr["details"], strict=True)):
             print(f"  Q{i+1}: {pq['question'][:70]}")
             print(f"    pdfplumber: {'HIT' if pq['gold_hit'] else 'MISS'} | {pq['answer_snippet'][:120]}")
             print(f"    docling:    {'HIT' if dq['gold_hit'] else 'MISS'} | {dq['answer_snippet'][:120]}")
