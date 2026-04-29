@@ -43,11 +43,7 @@ class QueryService:
             raise NotFoundError("No source snapshot found for the requested tenant.")
 
         snapshot_nodes = self.repository.list_snapshot_nodes(snapshot.snapshot_id)
-
-        # Financial Schema Grounding: expand query with SEC filing terminology
-        from .financial_schema import ground_query
-        grounded_query = ground_query(request.query)
-        selected_nodes = self.router.select(grounded_query, snapshot_nodes, request.subgraph_ids)
+        selected_nodes = self.router.select(request.query, snapshot_nodes, request.subgraph_ids)
 
         policy_bundle = self.policy_evaluator.evaluate(request.tenant_id, request.query, request.phase_b_mode)
         self.repository.store_policy_bundle(policy_bundle)
@@ -64,6 +60,12 @@ class QueryService:
         )
         evidence_nodes = self.repository.get_nodes_by_ids(item.node_id for item in manifest.items)
         provenance = build_provenance(manifest, evidence_nodes)
+
+        # Financial Schema: inject computation guidance into the query for the LLM
+        # (applied AFTER retrieval so it doesn't affect router node selection)
+        from .financial_schema import ground_query
+        llm_query = ground_query(request.query)
+
         answer_id = generate_id()
         phase_b_status = "off"
         answer = AnswerEnvelope(
@@ -71,7 +73,7 @@ class QueryService:
             tenant_id=request.tenant_id,
             phase=AnswerPhase.A,
             status=AnswerStatus.COMPLETE,
-            answer_text=self.model_provider.generate(request.query, manifest, evidence_nodes, policy_bundle),
+            answer_text=self.model_provider.generate(llm_query, manifest, evidence_nodes, policy_bundle),
             confidence_band=compute_confidence_band(evidence_nodes),
             provisional=True,
             provenance=provenance,
