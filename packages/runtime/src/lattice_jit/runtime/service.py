@@ -43,7 +43,11 @@ class QueryService:
             raise NotFoundError("No source snapshot found for the requested tenant.")
 
         snapshot_nodes = self.repository.list_snapshot_nodes(snapshot.snapshot_id)
-        selected_nodes = self.router.select(request.query, snapshot_nodes, request.subgraph_ids)
+
+        # Financial Schema Grounding: expand query with SEC filing terminology
+        from .financial_schema import ground_query
+        grounded_query = ground_query(request.query)
+        selected_nodes = self.router.select(grounded_query, snapshot_nodes, request.subgraph_ids)
 
         policy_bundle = self.policy_evaluator.evaluate(request.tenant_id, request.query, request.phase_b_mode)
         self.repository.store_policy_bundle(policy_bundle)
