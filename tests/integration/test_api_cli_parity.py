@@ -18,7 +18,7 @@ def test_api_and_cli_share_same_services(test_settings, sample_workspace: Path) 
     cli_get_container.cache_clear()
 
     test_container = build_container(test_settings)
-    app = create_app()
+    app = create_app(settings=test_settings)
     app.dependency_overrides[api_get_container] = lambda: test_container
     client = TestClient(app)
     runner = CliRunner()

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from difflib import SequenceMatcher
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 from lattice_jit.contracts import KnowledgeNode
 from lattice_jit.lattice import rank_nodes_for_query
+
+if TYPE_CHECKING:
+    from .embedding import EmbeddingService
 
 
 class RouterBackend(Protocol):
@@ -34,6 +37,7 @@ class BaselineRouter:
 @dataclass(slots=True)
 class HybridSemanticRouter:
     max_nodes: int = 8
+    embedding_service: EmbeddingService | None = field(default=None)
 
     def select(self, query: str, nodes: list[KnowledgeNode], subgraph_ids: list[UUID] | None) -> list[KnowledgeNode]:
         if subgraph_ids:
@@ -47,10 +51,25 @@ class HybridSemanticRouter:
 
         query_terms = _normalize_terms(query)
         query_text = " ".join(query_terms)
+
+        use_embeddings = self.embedding_service is not None and self.embedding_service.enabled
+
+        if use_embeddings:
+            texts = [query_text] + [_node_text(node) for node in nodes]
+            embeddings = self.embedding_service.encode(texts)  # type: ignore[union-attr]
+            query_embedding = embeddings[0]
+            node_embeddings = embeddings[1:]
+            from .embedding import cosine_similarity
+
         scored: list[tuple[KnowledgeNode, float]] = []
-        for node in nodes:
+        for idx, node in enumerate(nodes):
             node_text = _node_text(node)
-            semantic_score = _semantic_similarity(query_text, query_terms, node_text)
+            if use_embeddings:
+                emb_sim = cosine_similarity(query_embedding, node_embeddings[idx])
+                semantic_score = max(0.0, emb_sim)
+            else:
+                semantic_score = _semantic_similarity(query_text, query_terms, node_text)
+
             baseline_raw = baseline_by_id.get(node.node_id, 0.0)
             baseline_score = baseline_raw / max_baseline if max_baseline > 0 else 0.0
             score = 0.65 * semantic_score + 0.25 * baseline_score + 0.10 * node.serving_confidence
@@ -63,7 +82,6 @@ class HybridSemanticRouter:
         if selected:
             return selected
 
-        # Preserve baseline behavior if hybrid scoring cannot discriminate.
         return BaselineRouter(max_nodes=self.max_nodes).select(query, nodes, None)
 
 
@@ -71,10 +89,11 @@ class HybridSemanticRouter:
 class SemanticRouter:
     max_nodes: int = 8
     mode: str = "baseline"
+    backend_kwargs: dict[str, object] = field(default_factory=dict)
 
     def _backend(self) -> RouterBackend:
         if self.mode.lower() == "hybrid":
-            return HybridSemanticRouter(max_nodes=self.max_nodes)
+            return HybridSemanticRouter(max_nodes=self.max_nodes, **self.backend_kwargs)  # type: ignore[arg-type]
         return BaselineRouter(max_nodes=self.max_nodes)
 
     def select(self, query: str, nodes: list[KnowledgeNode], subgraph_ids: list[UUID] | None) -> list[KnowledgeNode]:

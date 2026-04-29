@@ -76,11 +76,26 @@ def build_container(settings: Settings | None = None, *, force_inline_phase_b: b
     )
     snapshot_service = GitLocalSnapshotService(repository)
     compiler = ContextCompiler(repository, cache_store, resolved_settings)
+
+    embedding_service: object | None = None
+    if resolved_settings.embedding_enabled:
+        from lattice_jit.runtime.embedding import EmbeddingService
+
+        embedding_service = EmbeddingService(
+            model_name=resolved_settings.embedding_model,
+            enabled=True,
+        )
+
     query_service = QueryService(
         repository=repository,
         router=SemanticRouter(
             max_nodes=resolved_settings.router_max_nodes,
             mode=resolved_settings.router_mode,
+            backend_kwargs=(
+                {"embedding_service": embedding_service}
+                if embedding_service is not None
+                else {}
+            ),
         ),
         compiler=compiler,
         policy_evaluator=build_policy_evaluator(

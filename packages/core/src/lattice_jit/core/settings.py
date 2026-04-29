@@ -44,6 +44,18 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 3_600
     router_mode: str = "baseline"
     router_max_nodes: int = 8
+    embedding_enabled: bool = False
+    embedding_model: str = "minishlab/potion-base-8M"
+    auth_enabled: bool = False
+    auth_api_keys: str = ""
+    rate_limit_enabled: bool = False
+    rate_limit_max_per_minute: int = 60
+    rate_limit_ingest_max_per_minute: int = 10
+    rate_limit_export_max_per_minute: int = 5
+    rate_limit_window_seconds: int = 60
+    celery_task_max_retries: int = 3
+    celery_task_soft_time_limit: int = 600
+    celery_dlq_enabled: bool = True
     log_level: str = "INFO"
 
 

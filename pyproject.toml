@@ -25,8 +25,10 @@ members = [
   "apps/worker",
   "packages/contracts",
   "packages/core",
+  "packages/connectors/confluence",
   "packages/connectors/git_local",
   "packages/connectors/pdf",
+  "packages/connectors/sharepoint",
   "packages/lattice",
   "packages/runtime",
   "packages/governance",
@@ -41,8 +43,10 @@ lattice-jit-cli = { workspace = true }
 lattice-jit-worker = { workspace = true }
 lattice-jit-contracts = { workspace = true }
 lattice-jit-core = { workspace = true }
+lattice-jit-connector-confluence = { workspace = true }
 lattice-jit-connector-git-local = { workspace = true }
 lattice-jit-connector-pdf = { workspace = true }
+lattice-jit-connector-sharepoint = { workspace = true }
 lattice-jit-lattice = { workspace = true }
 lattice-jit-runtime = { workspace = true }
 lattice-jit-governance = { workspace = true }
@@ -78,8 +82,10 @@ mypy_path = [
   "apps/worker/src",
   "packages/contracts/src",
   "packages/core/src",
+  "packages/connectors/confluence/src",
   "packages/connectors/git_local/src",
   "packages/connectors/pdf/src",
+  "packages/connectors/sharepoint/src",
   "packages/lattice/src",
   "packages/runtime/src",
   "packages/governance/src",
@@ -93,8 +99,10 @@ files = [
   "apps/worker/src/lattice_jit/apps/worker",
   "packages/contracts/src/lattice_jit/contracts",
   "packages/core/src/lattice_jit/core",
+  "packages/connectors/confluence/src/lattice_jit/connectors/confluence",
   "packages/connectors/git_local/src/lattice_jit/connectors/git_local",
   "packages/connectors/pdf/src/lattice_jit/connectors/pdf",
+  "packages/connectors/sharepoint/src/lattice_jit/connectors/sharepoint",
   "packages/lattice/src/lattice_jit/lattice",
   "packages/runtime/src/lattice_jit/runtime",
   "packages/governance/src/lattice_jit/governance",
@@ -115,7 +123,13 @@ exclude = [
 module = [
   "celery",
   "celery.*",
+  "html2text",
   "litellm",
+  "model2vec",
+  "openpyxl",
   "pypdf2",
+  "python-docx",
+  "python-pptx",
+  "requests",
 ]
 ignore_missing_imports = true

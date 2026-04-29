@@ -20,6 +20,9 @@ from lattice_jit.contracts import (
     SnapshotResponse,
 )
 from lattice_jit.core import AppContainer, NotFoundError, build_container
+from lattice_jit.core.auth import build_auth_middleware, parse_api_keys
+from lattice_jit.core.rate_limit import RateLimiter, build_rate_limit_middleware
+from lattice_jit.core.settings import Settings, get_settings
 
 
 @lru_cache(maxsize=1)
@@ -27,8 +30,23 @@ def get_container() -> AppContainer:
     return build_container()
 
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(title="Lattice-JIT Compiler v3.1")
+
+    _settings = settings or get_settings()
+    _api_keys = parse_api_keys(_settings.auth_api_keys)
+    _rate_limiter = RateLimiter(
+        enabled=_settings.rate_limit_enabled,
+        max_per_minute=_settings.rate_limit_max_per_minute,
+        window_seconds=_settings.rate_limit_window_seconds,
+        ingest_max_per_minute=_settings.rate_limit_ingest_max_per_minute,
+        export_max_per_minute=_settings.rate_limit_export_max_per_minute,
+    )
+    application.middleware("http")(build_auth_middleware(
+        enabled=_settings.auth_enabled,
+        api_keys=_api_keys,
+    ))
+    application.middleware("http")(build_rate_limit_middleware(_rate_limiter))
 
     templates_dir = Path(__file__).resolve().parent / "templates"
     templates = Jinja2Templates(directory=str(templates_dir))
@@ -306,6 +324,38 @@ def create_app() -> FastAPI:
             f"/ui/review-queue?tenant_id={tenant_id}&message=Review+rejected",
             status_code=303,
         )
+
+    @application.get("/v1/worker/health")
+    def worker_health() -> dict[str, str]:
+        try:
+            import redis
+
+            settings = build_container().settings
+            r = redis.from_url(settings.celery_broker_url)
+            r.ping()
+            return {"status": "healthy", "broker": "connected"}
+        except Exception:
+            return {"status": "degraded", "broker": "disconnected"}
+
+    @application.get("/v1/worker/dlq")
+    def get_dlq(
+        tenant_id: UUID,
+        limit: int = Query(50, ge=1, le=500),
+        container: AppContainer = Depends(get_container),
+    ) -> dict[str, object]:
+        import json
+
+        import redis
+
+        try:
+            r = redis.from_url(container.settings.redis_url)
+            items_raw: list = r.lrange("lattice_jit:dlq", 0, limit - 1)  # type: ignore[assignment]
+            items = [json.loads(item) for item in items_raw]
+            total: int = r.llen("lattice_jit:dlq")  # type: ignore[assignment]
+        except Exception:
+            items = []
+            total = 0
+        return {"items": items, "total": total, "limit": limit}
 
     return application
 

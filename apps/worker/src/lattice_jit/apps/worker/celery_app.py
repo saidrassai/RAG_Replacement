@@ -11,3 +11,7 @@ celery_app = Celery(
 )
 celery_app.conf.task_always_eager = settings.celery_eager
 celery_app.conf.task_default_queue = "lattice_jit"
+celery_app.conf.task_soft_time_limit = settings.celery_task_soft_time_limit
+celery_app.conf.task_time_limit = settings.celery_task_soft_time_limit + 300
+celery_app.conf.worker_send_task_events = True
+celery_app.conf.task_send_sent_event = True

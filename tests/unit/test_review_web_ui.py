@@ -10,7 +10,7 @@ from lattice_jit.contracts import ReviewItem, ReviewRiskLevel, ReviewState
 
 def _build_client(container):
     api_get_container.cache_clear()
-    app = create_app()
+    app = create_app(settings=container.settings)
     app.dependency_overrides[api_get_container] = lambda: container
     return TestClient(app)
 
