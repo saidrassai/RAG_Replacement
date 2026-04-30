@@ -26,6 +26,8 @@ class ModelProviderConfig:
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com/v1"
     prompt_caching_enabled: bool = False
+    huggingface_model: str = "OpenDataArena/ODA-Fin-RL-8B"
+    huggingface_api_url: str = "https://api-inference.huggingface.co/models"
 
 
 @dataclass(slots=True)
@@ -122,6 +124,82 @@ class LiteLLMModelProvider:
         return response.choices[0].message.content or ""
 
 
+@dataclass(slots=True)
+class HuggingFaceModelProvider:
+    model: str = "OpenDataArena/ODA-Fin-RL-8B"
+    api_url: str = "https://api-inference.huggingface.co/models"
+    temperature: float = 0.0
+    max_output_tokens: int = 1024
+
+    def generate(
+        self,
+        query: str,
+        manifest: CompiledContextManifest,
+        nodes: list[KnowledgeNode],
+        policy_bundle: PolicyBundle,
+    ) -> str:
+        """Generate using HuggingFace free Inference API (requires HF_TOKEN env var)."""
+        import json
+        import os
+        from urllib import request
+        from urllib.error import URLError
+
+        context_parts: list[str] = []
+        for item, node in zip(manifest.items, nodes, strict=False):
+            context_parts.append(
+                f"[{item.role.value}] {node.title} (source={node.source_uri or 'unknown'})\n{item.snippet}"
+            )
+        context = "\n\n".join(context_parts) if context_parts else "- No evidence matched."
+
+        hf_token = os.environ.get("HF_TOKEN", "")
+        if not hf_token:
+            raise RuntimeError("HF_TOKEN environment variable is required for HuggingFace provider. Get one at https://huggingface.co/settings/tokens")
+
+        payload = json.dumps({
+            "inputs": (
+                "<|im_start|>system\n"
+                "You are a financial reasoning assistant. Answer based on the provided context. "
+                "If a computation is required, show the formula and the values used. "
+                f"Policy class: {policy_bundle.query_class}. "
+                "Do not invent facts outside the context.\n"
+                "<|im_end|>\n"
+                "<|im_start|>user\n"
+                f"Query:\n{query}\n\nContext:\n{context}\n"
+                "<|im_end|>\n"
+                "<|im_start|>assistant\n"
+            ),
+            "parameters": {
+                "max_new_tokens": self.max_output_tokens,
+                "temperature": self.temperature,
+                "return_full_text": False,
+            },
+        }).encode("utf-8")
+
+        url = f"{self.api_url.rstrip('/')}/{self.model}"
+        req = request.Request(
+            url=url,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {hf_token}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+
+        try:
+            with request.urlopen(req, timeout=120) as response:
+                body = response.read().decode("utf-8")
+        except URLError as exc:
+            raise RuntimeError(f"HuggingFace API call failed for {self.model}: {exc}") from exc
+
+        result = json.loads(body)
+        if isinstance(result, list) and result:
+            return result[0].get("generated_text", "") or ""
+        if isinstance(result, dict):
+            return result.get("generated_text", "") or result.get("choices", [{}])[0].get("message", {}).get("content", "") or ""
+        return str(result)
+
+
 def build_model_provider(config: ModelProviderConfig) -> ModelProvider:
     provider_name = config.provider.strip().lower()
     if provider_name == "stub":
@@ -134,5 +212,12 @@ def build_model_provider(config: ModelProviderConfig) -> ModelProvider:
             deepseek_api_key=config.deepseek_api_key,
             deepseek_base_url=config.deepseek_base_url,
             prompt_caching_enabled=config.prompt_caching_enabled,
+        )
+    if provider_name == "huggingface":
+        return HuggingFaceModelProvider(
+            model=config.huggingface_model,
+            api_url=config.huggingface_api_url,
+            temperature=config.litellm_temperature,
+            max_output_tokens=config.litellm_max_output_tokens or 1024,
         )
     raise ValueError(f"Unknown model provider: {config.provider}")

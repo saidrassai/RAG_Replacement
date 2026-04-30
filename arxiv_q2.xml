@@ -1,0 +1,525 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/Zd9K4v00XD+bv8EFvES5ViDvjww</id>
+  <title>arXiv Query: search_query=(all:financial AND all:LLM AND (all:SFT OR all:RLHF OR all:GRPO OR all:DPO) )&amp;id_list=&amp;start=0&amp;max_results=15</title>
+  <updated>2026-04-30T20:07:25Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:financial+AND+(all:LLM+AND+(all:SFT+OR+(all:RLHF+OR+(all:GRPO+OR+all:DPO))))&amp;start=0&amp;max_results=15&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>15</opensearch:itemsPerPage>
+  <opensearch:totalResults>36</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2604.23988v1</id>
+    <title>Hindsight Preference Optimization for Financial Time Series Advisory</title>
+    <updated>2026-04-27T03:06:59Z</updated>
+    <link href="https://arxiv.org/abs/2604.23988v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.23988v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Time series models predict numbers; decision-makers need advisory -- directional signals with reasoning, actionable suggestions, and risk management. Training language models for such predictive advisory faces a fundamental challenge: quality depends on outcomes unknown at prediction time. We bridge two ideas from reinforcement learning -- using information unavailable during execution to retrospectively generate training signal, and preference alignment -- and propose Hindsight Preference Optimization: observed outcomes let an LLM judge rank candidate advisories on dimensions that scalar metrics cannot capture, producing preference pairs for DPO without human annotation. We apply this to Vision-Language-Model-based predictive advisories on S&amp;P 500 equity time series, demonstrated by a 4B model outperforming its 235B teacher on both accuracy and advisory quality.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-27T03:06:59Z</published>
+    <arxiv:comment>Accepted at ICLR 2026 TSALM Workshop</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Yanwei Cui</name>
+    </author>
+    <author>
+      <name>Guanghui Wang</name>
+    </author>
+    <author>
+      <name>Xing Zhang</name>
+    </author>
+    <author>
+      <name>Peiyang He</name>
+    </author>
+    <author>
+      <name>Ziyuan Li</name>
+    </author>
+    <author>
+      <name>Bing Zhu</name>
+    </author>
+    <author>
+      <name>Wei Qiu</name>
+    </author>
+    <author>
+      <name>Xusheng Wang</name>
+    </author>
+    <author>
+      <name>Zheng Yu</name>
+    </author>
+    <author>
+      <name>Anqi Xin</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.23113v1</id>
+    <title>Reducing Detail Hallucinations in Long-Context Regulatory Understanding via Targeted Preference Optimization</title>
+    <updated>2026-04-25T02:41:09Z</updated>
+    <link href="https://arxiv.org/abs/2604.23113v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.23113v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Large language models (LLMs) frequently produce \emph{detail hallucinations} when processing long regulatory documents, including subtle errors in threshold values, units, scopes, obligation levels, and conditions that preserve surface plausibility while corrupting safety-critical parameters. We formalize this phenomenon through a fine-grained \emph{Detail Error Taxonomy} of five error types and introduce \textbf{DetailBench}, a benchmark built from 172 real regulatory documents and 150 synthetic documents spanning three jurisdictions, with human-annotated detail-level ground truth comprising 13,000 preference pairs. We propose \textbf{DetailDPO}, a targeted preference optimization framework that constructs contrastive pairs differing in exactly one detail dimension, concentrating DPO gradient signal on detail-bearing~tokens. We provide theoretical analysis showing why \emph{minimal detail perturbation} pairs yield gradient concentration under mild assumptions. Experiments on the Qwen2.5 family (7B, 14B, 72B) and Llama-3.1-8B across three context-length tiers (8K--64K tokens) show that DetailDPO reduces the Detail Error Rate by 42--61\% relative to baselines, with consistent gains across all five error types and cross-domain transfer to financial and medical documents.</summary>
+    <category term="cs.SI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-25T02:41:09Z</published>
+    <arxiv:comment>16 pages, 4 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.SI"/>
+    <author>
+      <name>Yang Liu</name>
+    </author>
+    <author>
+      <name>Bin Chong</name>
+    </author>
+    <author>
+      <name>Yuhan Lin</name>
+    </author>
+    <author>
+      <name>Chongyang Zhang</name>
+    </author>
+    <author>
+      <name>Hao Zheng</name>
+    </author>
+    <author>
+      <name>Ziyi Zhang</name>
+    </author>
+    <author>
+      <name>Jiayu Liang</name>
+    </author>
+    <author>
+      <name>Ran Ran</name>
+    </author>
+    <author>
+      <name>Qian Li</name>
+    </author>
+    <author>
+      <name>Kefu Xu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.11477v1</id>
+    <title>OOM-RL: Out-of-Money Reinforcement Learning Market-Driven Alignment for LLM-Based Multi-Agent Systems</title>
+    <updated>2026-04-13T13:45:42Z</updated>
+    <link href="https://arxiv.org/abs/2604.11477v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.11477v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The alignment of Multi-Agent Systems (MAS) for autonomous software engineering is constrained by evaluator epistemic uncertainty. Current paradigms, such as Reinforcement Learning from Human Feedback (RLHF) and AI Feedback (RLAIF), frequently induce model sycophancy, while execution-based environments suffer from adversarial "Test Evasion" by unconstrained agents. In this paper, we introduce an objective alignment paradigm: \textbf{Out-of-Money Reinforcement Learning (OOM-RL)}. By deploying agents into the non-stationary, high-friction reality of live financial markets, we utilize critical capital depletion as an un-hackable negative gradient. Our longitudinal 20-month empirical study (July 2024 -- February 2026) chronicles the system's evolution from a high-turnover, sycophantic baseline to a robust, liquidity-aware architecture. We demonstrate that the undeniable ontological consequences of financial loss forced the MAS to abandon overfitted hallucinations in favor of the \textbf{Strict Test-Driven Agentic Workflow (STDAW)}, which enforces a Byzantine-inspired uni-directional state lock (RO-Lock) anchored to a deterministically verified $\geq 95\%$ code coverage constraint matrix. Our results show that while early iterations suffered severe execution decay, the final OOM-RL-aligned system achieved a stable equilibrium with an annualized Sharpe ratio of 2.06 in its mature phase. We conclude that substituting subjective human preference with rigorous economic penalties provides a robust methodology for aligning autonomous agents in high-stakes, real-world environments, laying the groundwork for generalized paradigms where computational billing acts as an objective physical constraint</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.SE" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="q-fin.TR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-13T13:45:42Z</published>
+    <arxiv:comment>13 pages, 3 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Kun Liu</name>
+    </author>
+    <author>
+      <name>Liqun Chen</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.10015v2</id>
+    <title>FinTrace: Holistic Trajectory-Level Evaluation of LLM Tool Calling for Long-Horizon Financial Tasks</title>
+    <updated>2026-04-15T16:59:27Z</updated>
+    <link href="https://arxiv.org/abs/2604.10015v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.10015v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Recent studies demonstrate that tool-calling capability enables large language models (LLMs) to interact with external environments for long-horizon financial tasks. While existing benchmarks have begun evaluating financial tool calling, they focus on limited scenarios and rely on call-level metrics that fail to capture trajectory-level reasoning quality. To address this gap, we introduce FinTrace, a benchmark comprising 800 expert-annotated trajectories spanning 34 real-world financial task categories across multiple difficulty levels. FinTrace employs a rubric-based evaluation protocol with nine metrics organized along four axes -- action correctness, execution efficiency, process quality, and output quality -- enabling fine-grained assessment of LLM tool-calling behavior. Our evaluation of 13 LLMs reveals that while frontier models achieve strong tool selection, all models struggle with information utilization and final answer quality, exposing a critical gap between invoking the right tools and reasoning effectively over their outputs. To move beyond diagnosis, we construct FinTrace-Training, the first trajectory-level preference dataset for financial tool-calling, containing 8,196 curated trajectories with tool-augmented contexts and preference pairs. We fine-tune Qwen-3.5-9B using supervised fine-tuning followed by direct preference optimization (DPO) and show that training on FinTrace-Training consistently improves intermediate reasoning metrics, with DPO more effectively suppressing failure modes. However, end-to-end answer quality remains a bottleneck, indicating that trajectory-level improvements do not yet fully propagate to final output quality.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CE" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.MM" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-11T03:58:39Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Yupeng Cao</name>
+    </author>
+    <author>
+      <name>Haohang Li</name>
+    </author>
+    <author>
+      <name>Weijin Liu</name>
+    </author>
+    <author>
+      <name>Wenbo Cao</name>
+    </author>
+    <author>
+      <name>Anke Xu</name>
+    </author>
+    <author>
+      <name>Lingfei Qian</name>
+    </author>
+    <author>
+      <name>Xueqing Peng</name>
+    </author>
+    <author>
+      <name>Minxue Tang</name>
+    </author>
+    <author>
+      <name>Zhiyuan Yao</name>
+    </author>
+    <author>
+      <name>Jimin Huang</name>
+    </author>
+    <author>
+      <name>K. P. Subbalakshmi</name>
+    </author>
+    <author>
+      <name>Zining Zhu</name>
+    </author>
+    <author>
+      <name>Jordan W. Suchow</name>
+    </author>
+    <author>
+      <name>Yangyang Yu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.07054v2</id>
+    <title>Sell More, Play Less: Benchmarking LLM Realistic Selling Skill</title>
+    <updated>2026-04-09T07:49:38Z</updated>
+    <link href="https://arxiv.org/abs/2604.07054v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.07054v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Sales dialogues require multi-turn, goal-directed persuasion under asymmetric incentives, which makes them a challenging setting for large language models (LLMs). Yet existing dialogue benchmarks rarely measure deal progression and outcomes. We introduce SalesLLM benchmark, a bilingual (ZH/EN) benchmark derived from realistic applications covering Financial Services and Consumer Goods, built from 30,074 scripted configurations and 1,805 curated multi-turn scenarios with controllable difficulty and personas. We propose a fully automatic evaluation pipeline that combines (i) an LLM-based rater for sales-process progress,and (ii) fine-tuned BERT classifiers for end-of-dialogue buying intent. To improve simulation fidelity, we train a user model, CustomerLM, with SFT and DPO on 8,000+ crowdworker-involved sales conversations, reducing role inversion from 17.44% (GPT-4o) to 8.8%. SalesLLM benchmark scores correlate strongly with expert human ratings (Pearson r=0.98). Experiments across 15 mainstream LLMs reveal substantial variability: top-performance LLMs are competitive with human-level performance while the less capable ones are worse than human. SalesLLM benchmark serves as a scalable benchmark for developing and evaluating outcome-oriented sales agents.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-08T13:06:37Z</published>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Xuanbo Su</name>
+    </author>
+    <author>
+      <name>Wenhao Hu</name>
+    </author>
+    <author>
+      <name>Haibo Su</name>
+    </author>
+    <author>
+      <name>Yunzhang Chen</name>
+    </author>
+    <author>
+      <name>Le Zhan</name>
+    </author>
+    <author>
+      <name>Yanqi Yang</name>
+    </author>
+    <author>
+      <name>Leo Huang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.05135v1</id>
+    <title>SenseAI: A Human-in-the-Loop Dataset for RLHF-Aligned Financial Sentiment Reasoning</title>
+    <updated>2026-04-06T19:55:35Z</updated>
+    <link href="https://arxiv.org/abs/2604.05135v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.05135v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We introduce SenseAI, a human-in-the-loop (HITL) validated financial sentiment dataset designed to capture not only model outputs but the full reasoning process behind them. Unlike existing resources, SenseAI incorporates reasoning chains, confidence scores, human correction signals, and real-world market outcomes, providing a structure aligned with Reinforcement Learning from Human Feedback (RLHF) paradigms.
+  The dataset consists of 1,439 labelled data points across 40 US-listed equities and 13 financial data categories, enabling direct integration into modern LLM fine-tuning pipelines. Through analysis, we identify several systematic patterns in model behavior, including a novel failure mode we term Latent Reasoning Drift, where models introduce information not grounded in the input, as well as consistent confidence miscalibration and forward projection tendencies.
+  These findings suggest that LLM errors in financial reasoning are not random but occur within a predictable and correctable regime, supporting the use of structured HITL data for targeted model improvement. We discuss implications for financial AI systems and highlight opportunities for applying SenseAI in model evaluation and alignment.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-06T19:55:35Z</published>
+    <arxiv:comment>Dataset available on request (bernykabalisa18@gmail.com) See GitHub for dataset snapshot and automated data collection script demo https://github.com/bernykabalisa18-netizen/SenseAI</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Berny Kabalisa</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2603.07223v1</id>
+    <title>Unlocking Data Value in Finance: A Study on Distillation and Difficulty-Aware Training</title>
+    <updated>2026-03-07T14:07:37Z</updated>
+    <link href="https://arxiv.org/abs/2603.07223v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2603.07223v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Large Language Models (LLMs) have demonstrated strong general capabilities, yet their deployment in finance remains challenging due to dense domain-specific terminology, stringent numerical reasoning requirements, and low tolerance for factual errors. We conduct a controlled empirical study showing that in specialized vertical domains, performance is largely determined by the quality and difficulty/verifiability profile of post-training data. We introduce \textbf{ODA-Fin-SFT-318k}, constructed via multi-stage distillation and verification to produce high-quality Chain-of-Thought supervision, and \textbf{ODA-Fin-RL-12k}, curated for hard-but-verifiable tasks that balance reward precision and task diversity. Using standard SFT and RL pipelines, we show that high-quality CoT distillation establishes a robust foundation during SFT, while difficulty- and verifiability-aware sampling improves RL generalization. Evaluated on nine benchmarks spanning general financial tasks, sentiment analysis, and numerical reasoning, our ODA-Fin-RL-8B consistently surpasses open-source state-of-the-art (SOTA) financial LLMs of comparable size. We release our ODA-Fin-SFT-318k and ODA-Fin-RL-12k datasets, along with trained models to advance data-centric financial AI research.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-03-07T14:07:37Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Chuxue Cao</name>
+    </author>
+    <author>
+      <name>Honglin Lin</name>
+    </author>
+    <author>
+      <name>Zhanping Zhong</name>
+    </author>
+    <author>
+      <name>Xin Gao</name>
+    </author>
+    <author>
+      <name>Mengzhang Cai</name>
+    </author>
+    <author>
+      <name>Conghui He</name>
+    </author>
+    <author>
+      <name>Sirui Han</name>
+    </author>
+    <author>
+      <name>Lijun Wu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2603.13244v1</id>
+    <title>Agentic AI, Retrieval-Augmented Generation, and the Institutional Turn: Legal Architectures and Financial Governance in the Age of Distributional AGI</title>
+    <updated>2026-02-20T11:58:43Z</updated>
+    <link href="https://arxiv.org/abs/2603.13244v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2603.13244v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The proliferation of agentic artificial intelligence systems--characterized by autonomous goal-seeking, tool use, and multi-agent coordination--presents unprecedented challenges to existing legal and financial regulatory frameworks. While traditional AI governance has focused on model-level alignment through training-time interventions such as Reinforcement Learning from Human Feedback (RLHF), the deployment of large language models (LLMs) as persistent agents necessitates a paradigm shift toward institutional governance structures. This paper examines the intersection of agentic AI, Retrieval-Augmented Generation (RAG), and their implications for legal accountability and financial market integrity. Through analysis of the Institutional AI framework, we argue that alignment must be reconceptualized as a mechanism design problem involving runtime governance graphs, sanction functions, and observable behavioral constraints rather than internalized constitutional values[...].The analysis concludes that the future of AI governance lies not in perfecting isolated model behavior, but in architecting institutional environments where compliant behavior emerges as the dominant strategy through carefully calibrated payoff landscapes.</summary>
+    <category term="cs.CY" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-02-20T11:58:43Z</published>
+    <arxiv:comment>35 pages, 92 references. Comprehensive interdisciplinary analysis integrating AI safety, mechanism design, legal regulation, and financial governance. Published on Zenodo (https://doi.org/10.5281/zenodo.18711509). Includes industry practitioner perspectives alongside peer-reviewed literature</arxiv:comment>
+    <arxiv:primary_category term="cs.CY"/>
+    <author>
+      <name>Marcel Osmond</name>
+    </author>
+    <arxiv:doi>10.5281/zenodo.18711509</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.5281/zenodo.18711509" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2512.24314v2</id>
+    <title>QianfanHuijin Technical Report: A Novel Multi-Stage Training Paradigm for Finance Industrial LLMs</title>
+    <updated>2026-01-18T15:26:01Z</updated>
+    <link href="https://arxiv.org/abs/2512.24314v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2512.24314v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Domain-specific enhancement of Large Language Models (LLMs) within the financial context has long been a focal point of industrial application. While previous models such as BloombergGPT and Baichuan-Finance primarily focused on knowledge enhancement, the deepening complexity of financial services has driven a growing demand for models that possess not only domain knowledge but also robust financial reasoning and agentic capabilities. In this paper, we present QianfanHuijin, a financial domain LLM, and propose a generalizable multi-stage training paradigm for industrial model enhancement.
+  Our approach begins with Continual Pre-training (CPT) on financial corpora to consolidate the knowledge base. This is followed by a fine-grained Post-training pipeline designed with increasing specificity: starting with Financial SFT, progressing to Finance Reasoning RL and Finance Agentic RL, and culminating in General RL aligned with real-world business scenarios. Empirical results demonstrate that QianfanHuijin achieves superior performance across various authoritative financial benchmarks. Furthermore, ablation studies confirm that the targeted Reasoning RL and Agentic RL stages yield significant gains in their respective capabilities. These findings validate our motivation and suggest that this fine-grained, progressive post-training methodology is poised to become a mainstream paradigm for various industrial-enhanced LLMs.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-12-30T16:10:51Z</published>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Shupeng Li</name>
+    </author>
+    <author>
+      <name>Weipeng Lu</name>
+    </author>
+    <author>
+      <name>Linyun Liu</name>
+    </author>
+    <author>
+      <name>Chen Lin</name>
+    </author>
+    <author>
+      <name>Shaofei Li</name>
+    </author>
+    <author>
+      <name>Zhendong Tan</name>
+    </author>
+    <author>
+      <name>Hanjun Zhong</name>
+    </author>
+    <author>
+      <name>Yucheng Zeng</name>
+    </author>
+    <author>
+      <name>Chenghao Zhu</name>
+    </author>
+    <author>
+      <name>Mengyue Liu</name>
+    </author>
+    <author>
+      <name>Daxiang Dong</name>
+    </author>
+    <author>
+      <name>Jianmin Wu</name>
+    </author>
+    <author>
+      <name>Yunting Xiao</name>
+    </author>
+    <author>
+      <name>Annan Li</name>
+    </author>
+    <author>
+      <name>Danyu Liu</name>
+    </author>
+    <author>
+      <name>Jingnan Zhang</name>
+    </author>
+    <author>
+      <name>Licen Liu</name>
+    </author>
+    <author>
+      <name>Dawei Yin</name>
+    </author>
+    <author>
+      <name>Dou Shen</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2511.02451v1</id>
+    <title>Merging Continual Pretraining Models for Domain-Specialized LLMs: A Case Study in Finance</title>
+    <updated>2025-11-04T10:28:57Z</updated>
+    <link href="https://arxiv.org/abs/2511.02451v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2511.02451v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>While LLMs excel at general tasks, they struggle in specialized domains like finance, requiring diverse skills in domain knowledge, mathematical reasoning, and multilingual processing. Merging domain-specific Continual Pre-training (CPT) "experts" offers a practical alternative to costly and unstable multi-skill training. However, unlike established Supervised Fine-Tuning (SFT) model-based merging, CPT model merging remains largely unexplored. We address this gap by creating financial LLMs from experts in finance, math, and Japanese. We propose a three-stage evaluation focusing on knowledge recovery, complementarity, and emergence, and assess three merging methods (Task Arithmetic, TIES, and DARE-TIES) on a comprehensive financial benchmark curated from 18 tasks across 8 established datasets. Results show that merging an expert with its base model recovers general knowledge lost during CPT, while merging experts improves performance and can yield emergent cross-domain skills. Among the methods, Task Arithmetic performs strongly but is hyperparameter-sensitive, whereas TIES is more robust. Our findings also suggest that while model similarity correlates with merging success, emergent skills depend on more complex factors. This work presents the first foundational analysis of CPT model merging, establishing a principled framework and providing clear guidance for building multi-skill LLMs from existing assets.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-11-04T10:28:57Z</published>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Kentaro Ueda</name>
+    </author>
+    <author>
+      <name>François Portet</name>
+    </author>
+    <author>
+      <name>Hirohiko Suwa</name>
+    </author>
+    <author>
+      <name>Keiichi Yasumoto</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2509.24342v1</id>
+    <title>Fin-Ally: Pioneering the Development of an Advanced, Commonsense-Embedded Conversational AI for Money Matters</title>
+    <updated>2025-09-29T06:44:47Z</updated>
+    <link href="https://arxiv.org/abs/2509.24342v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2509.24342v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The exponential technological breakthrough of the FinTech industry has significantly enhanced user engagement through sophisticated advisory chatbots. However, large-scale fine-tuning of LLMs can occasionally yield unprofessional or flippant remarks, such as ``With that money, you're going to change the world,'' which, though factually correct, can be contextually inappropriate and erode user trust. The scarcity of domain-specific datasets has led previous studies to focus on isolated components, such as reasoning-aware frameworks or the enhancement of human-like response generation. To address this research gap, we present Fin-Solution 2.O, an advanced solution that 1) introduces the multi-turn financial conversational dataset, Fin-Vault, and 2) incorporates a unified model, Fin-Ally, which integrates commonsense reasoning, politeness, and human-like conversational dynamics. Fin-Ally is powered by COMET-BART-embedded commonsense context and optimized with a Direct Preference Optimization (DPO) mechanism to generate human-aligned responses. The novel Fin-Vault dataset, consisting of 1,417 annotated multi-turn dialogues, enables Fin-Ally to extend beyond basic account management to provide personalized budgeting, real-time expense tracking, and automated financial planning. Our comprehensive results demonstrate that incorporating commonsense context enables language models to generate more refined, textually precise, and professionally grounded financial guidance, positioning this approach as a next-generation AI solution for the FinTech sector. Dataset and codes are available at: https://github.com/sarmistha-D/Fin-Ally</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-09-29T06:44:47Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Sarmistha Das</name>
+    </author>
+    <author>
+      <name>Priya Mathur</name>
+    </author>
+    <author>
+      <name>Ishani Sharma</name>
+    </author>
+    <author>
+      <name>Sriparna Saha</name>
+    </author>
+    <author>
+      <name>Kitsuchart Pasupa</name>
+    </author>
+    <author>
+      <name>Alka Maurya</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2509.20961v1</id>
+    <title>Unlocking Financial Insights: An advanced Multimodal Summarization with Multimodal Output Framework for Financial Advisory Videos</title>
+    <updated>2025-09-25T09:54:19Z</updated>
+    <link href="https://arxiv.org/abs/2509.20961v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2509.20961v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The dynamic propagation of social media has broadened the reach of financial advisory content through podcast videos, yet extracting insights from lengthy, multimodal segments (30-40 minutes) remains challenging. We introduce FASTER (Financial Advisory Summariser with Textual Embedded Relevant images), a modular framework that tackles three key challenges: (1) extracting modality-specific features, (2) producing optimized, concise summaries, and (3) aligning visual keyframes with associated textual points. FASTER employs BLIP for semantic visual descriptions, OCR for textual patterns, and Whisper-based transcription with Speaker diarization as BOS features. A modified Direct Preference Optimization (DPO)-based loss function, equipped with BOS-specific fact-checking, ensures precision, relevance, and factual consistency against the human-aligned summary. A ranker-based retrieval mechanism further aligns keyframes with summarized content, enhancing interpretability and cross-modal coherence. To acknowledge data resource scarcity, we introduce Fin-APT, a dataset comprising 470 publicly accessible financial advisory pep-talk videos for robust multimodal research. Comprehensive cross-domain experiments confirm FASTER's strong performance, robustness, and generalizability when compared to Large Language Models (LLMs) and Vision-Language Models (VLMs). By establishing a new standard for multimodal summarization, FASTER makes financial advisory content more accessible and actionable, thereby opening new avenues for research. The dataset and code are available at: https://github.com/sarmistha-D/FASTER</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-09-25T09:54:19Z</published>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Sarmistha Das</name>
+    </author>
+    <author>
+      <name>R E Zera Marveen Lyngkhoi</name>
+    </author>
+    <author>
+      <name>Sriparna Saha</name>
+    </author>
+    <author>
+      <name>Alka Maurya</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2509.09942v2</id>
+    <title>Towards Secure and Explainable Smart Contract Generation with Security-Aware Group Relative Policy Optimization</title>
+    <updated>2025-10-12T04:04:06Z</updated>
+    <link href="https://arxiv.org/abs/2509.09942v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2509.09942v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Smart contracts automate the management of high-value assets, where vulnerabilities can lead to catastrophic financial losses. This challenge is amplified in Large Language Models (LLMs) by two interconnected failures: they operate as unauditable "black boxes" lacking a transparent reasoning process, and consequently, generate code riddled with critical security vulnerabilities. To address both issues, we propose SmartCoder-R1 (based on Qwen2.5-Coder-7B), a novel framework for secure and explainable smart contract generation. It begins with Continual Pre-training (CPT) to specialize the model. We then apply Long Chain-of-Thought Supervised Fine-Tuning (L-CoT SFT) on 7,998 expert-validated reasoning-and-code samples to train the model to emulate human security analysis. Finally, to directly mitigate vulnerabilities, we employ Security-Aware Group Relative Policy Optimization (S-GRPO), a reinforcement learning phase that refines the generation policy by optimizing a weighted reward signal for compilation success, security compliance, and format correctness. Evaluated against 17 baselines on a benchmark of 756 real-world functions, SmartCoder-R1 establishes a new state of the art, achieving top performance across five key metrics: a ComPass of 87.70%, a VulRate of 8.60%, a SafeAval of 80.16%, a FuncRate of 53.84%, and a FullRate of 50.53%. This FullRate marks a 45.79% relative improvement over the strongest baseline, DeepSeek-R1. Crucially, its generated reasoning also excels in human evaluations, achieving high-quality ratings for Functionality (82.7%), Security (85.3%), and Clarity (90.7%).</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.SE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-09-12T03:14:50Z</published>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Lei Yu</name>
+    </author>
+    <author>
+      <name>Jingyuan Zhang</name>
+    </author>
+    <author>
+      <name>Xin Wang</name>
+    </author>
+    <author>
+      <name>Jiajia Ma</name>
+    </author>
+    <author>
+      <name>Li Yang</name>
+    </author>
+    <author>
+      <name>Fengjun Zhang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2509.05080v2</id>
+    <title>MM-DREX: Multimodal-Driven Dynamic Routing of LLM Experts for Financial Trading</title>
+    <updated>2025-09-10T15:45:41Z</updated>
+    <link href="https://arxiv.org/abs/2509.05080v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2509.05080v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The inherent non-stationarity of financial markets and the complexity of multi-modal information pose significant challenges to existing quantitative trading models. Traditional methods relying on fixed structures and unimodal data struggle to adapt to market regime shifts, while large language model (LLM)-driven solutions - despite their multi-modal comprehension - suffer from static strategies and homogeneous expert designs, lacking dynamic adjustment and fine-grained decision mechanisms. To address these limitations, we propose MM-DREX: a Multimodal-driven, Dynamically-Routed EXpert framework based on large language models. MM-DREX explicitly decouples market state perception from strategy execution to enable adaptive sequential decision-making in non-stationary environments. Specifically, it (1) introduces a vision-language model (VLM)-powered dynamic router that jointly analyzes candlestick chart patterns and long-term temporal features to allocate real-time expert weights; (2) designs four heterogeneous trading experts (trend, reversal, breakout, positioning) generating specialized fine-grained sub-strategies; and (3) proposes an SFT-RL hybrid training paradigm to synergistically optimize the router's market classification capability and experts' risk-adjusted decision-making. Extensive experiments on multi-modal datasets spanning stocks, futures, and cryptocurrencies demonstrate that MM-DREX significantly outperforms 15 baselines (including state-of-the-art financial LLMs and deep reinforcement learning models) across key metrics: total return, Sharpe ratio, and maximum drawdown, validating its robustness and generalization. Additionally, an interpretability module traces routing logic and expert behavior in real time, providing an audit trail for strategy transparency.</summary>
+    <category term="q-fin.TR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-09-05T13:19:51Z</published>
+    <arxiv:primary_category term="q-fin.TR"/>
+    <author>
+      <name>Yang Chen</name>
+    </author>
+    <author>
+      <name>Yueheng Jiang</name>
+    </author>
+    <author>
+      <name>Zhaozhao Ma</name>
+    </author>
+    <author>
+      <name>Yuchen Cao</name>
+    </author>
+    <author>
+      <name>Jacky Keung</name>
+    </author>
+    <author>
+      <name>Kun Kuang</name>
+    </author>
+    <author>
+      <name>Leilei Gan</name>
+    </author>
+    <author>
+      <name>Yiquan Wu</name>
+    </author>
+    <author>
+      <name>Fei Wu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2508.15213v2</id>
+    <title>Select to Know: An Internal-External Knowledge Self-Selection Framework for Domain-Specific Question Answering</title>
+    <updated>2025-09-18T11:35:01Z</updated>
+    <link href="https://arxiv.org/abs/2508.15213v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2508.15213v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Large Language Models (LLMs) perform well in general QA but often struggle in domain-specific scenarios. Retrieval-Augmented Generation (RAG) introduces external knowledge but suffers from hallucinations and latency due to noisy retrievals. Continued pretraining internalizes domain knowledge but is costly and lacks cross-domain flexibility. We attribute this challenge to the long-tail distribution of domain knowledge, which leaves partial yet useful internal knowledge underutilized. We further argue that knowledge acquisition should be progressive, mirroring human learning: first understanding concepts, then applying them to complex reasoning. To address this, we propose Selct2Know (S2K), a cost-effective framework that internalizes domain knowledge through an internal-external knowledge self-selection strategy and selective supervised fine-tuning. We also introduce a structured reasoning data generation pipeline and integrate GRPO to enhance reasoning ability. Experiments on medical, legal, and financial QA benchmarks show that S2K consistently outperforms existing methods and matches domain-pretrained LLMs with significantly lower cost.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-08-21T03:53:35Z</published>
+    <arxiv:comment>EMNLP2025 Findings</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Bolei He</name>
+    </author>
+    <author>
+      <name>Xinran He</name>
+    </author>
+    <author>
+      <name>Run Shao</name>
+    </author>
+    <author>
+      <name>Shanfu Shu</name>
+    </author>
+    <author>
+      <name>Xianwei Xue</name>
+    </author>
+    <author>
+      <name>Mingquan Cheng</name>
+    </author>
+    <author>
+      <name>Haifeng Li</name>
+    </author>
+    <author>
+      <name>Zhenhua Ling</name>
+    </author>
+  </entry>
+</feed>

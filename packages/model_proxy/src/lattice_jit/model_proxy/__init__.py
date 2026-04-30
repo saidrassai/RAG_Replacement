@@ -1,4 +1,5 @@
 from .provider import (
+    HuggingFaceModelProvider,
     LiteLLMModelProvider,
     ModelProvider,
     ModelProviderConfig,
@@ -7,6 +8,7 @@ from .provider import (
 )
 
 __all__ = [
+    "HuggingFaceModelProvider",
     "LiteLLMModelProvider",
     "ModelProvider",
     "ModelProviderConfig",

@@ -126,6 +126,7 @@ module = [
   "celery",
   "celery.*",
   "html2text",
+  "huggingface_hub",
   "litellm",
   "model2vec",
   "openpyxl",

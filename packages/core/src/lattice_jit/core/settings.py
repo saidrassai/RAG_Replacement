@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     litellm_model: str = "gpt-4o-mini"
     litellm_temperature: float = 0.0
     litellm_max_output_tokens: int | None = None
+    huggingface_model: str = "OpenDataArena/ODA-Fin-RL-8B"
     litellm_deepseek_api_key: str = ""
     litellm_deepseek_base_url: str = "https://api.deepseek.com/v1"
     litellm_prompt_caching_enabled: bool = False

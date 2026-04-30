@@ -139,6 +139,7 @@ def _select_model_provider(settings: Settings):
             deepseek_api_key=settings.litellm_deepseek_api_key,
             deepseek_base_url=settings.litellm_deepseek_base_url,
             prompt_caching_enabled=settings.litellm_prompt_caching_enabled,
+            huggingface_model=settings.huggingface_model,
         )
     )
 
