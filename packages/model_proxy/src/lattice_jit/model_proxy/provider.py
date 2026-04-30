@@ -90,13 +90,9 @@ class LiteLLMModelProvider:
             {
                 "role": "system",
                 "content": (
-                    "You are a financial knowledge assistant analyzing SEC filings with provenance awareness. "
+                    "You are a financial knowledge assistant analyzing compiled context with provenance awareness. "
                     f"Policy class: {policy_bundle.query_class}. "
-                    "When answering: (1) cite exact numbers as they appear in the source, "
-                    "including dollar amounts with units like $1,577 million. "
-                    "(2) Prefer the exact figure from the source over rounded approximations. "
-                    "(3) If a computation is needed, show the formula and the values used. "
-                    "(4) Cite source URIs when referencing facts. "
+                    "Cite source URIs when referencing facts. "
                     "Do not invent facts outside the provided context. "
                     "If the context is insufficient, state so clearly."
                 ),

@@ -69,92 +69,40 @@ def normalize(text: str) -> str:
 
 
 def extract_numbers(text: str) -> list[float]:
-    """Extract numeric values from text, handling comma formatting and unit scaling."""
-    # Try to find number-unit pairs: "$1,577 million", "24.6%", "$3.2 billion", etc
-    scaled: list[float] = []
-    text_lower = text.lower()
-
-    # Scale-aware patterns
-    for pattern, scale in [
-        (r"\$?([\d,]+\.?\d*)\s*(?:million|m)\b", 1_000_000),
-        (r"\$?([\d,]+\.?\d*)\s*(?:billion|b|bn)\b", 1_000_000_000),
-        (r"\$?([\d,]+\.?\d*)\s*(?:thousand|k)\b", 1_000),
-        (r"([\d,]+\.?\d*)\s*%", 0.01),
-        (r"\$?([\d,]+\.?\d*)", 1),
-    ]:
-        for m in re.finditer(pattern, text_lower):
-            try:
-                val = float(m.group(1).replace(",", ""))
-                scaled.append(val * scale)
-            except ValueError:
-                pass
-
-    # Also extract plain numbers
-    for n in re.findall(r"[\d,]+\.?\d*", text):
+    """Extract all numeric values from text."""
+    numbers = re.findall(r"[\d,.]+%?", text)
+    result = []
+    for n in numbers:
+        n = n.replace(",", "").replace("%", "").replace("$", "")
         try:
-            val = float(n.replace(",", ""))
-            if val not in scaled:
-                scaled.append(val)
+            result.append(float(n))
         except ValueError:
             pass
-
-    return scaled
-
-
-def _numeric_overlap(pred_nums: list[float], gold_nums: list[float], tolerance: float = 0.02) -> float:
-    """Check what fraction of gold numbers are approximately matched in predictions.
-
-    Handles FinanceBench's unit-stripping convention: gold answers say "$1577.00"
-    meaning "$1,577 million" — so we check unit-scaled variants too.
-    """
-    if not gold_nums:
-        return 0.5
-    # Round and deduplicate
-    pred_rounded = {round(n, 0) for n in pred_nums}
-    gold_rounded = [round(n, 0) for n in gold_nums]
-    if not gold_rounded:
-        return 0.5
-
-    matches = 0
-    for gn in gold_rounded:
-        matched = False
-        for pn in pred_rounded:
-            # Exact or close match
-            if gn != 0 and abs(pn - gn) / max(abs(gn), 1) < tolerance:
-                matched = True
-                break
-            # FinanceBench unit scaling: gold says 1577, model says 1,577 million
-            for scale in [1_000, 1_000_000, 1_000_000_000]:
-                if gn != 0 and abs(pn - gn * scale) / max(abs(gn * scale), 1) < tolerance:
-                    matched = True
-                    break
-                if pn != 0 and abs(gn - pn * scale) / max(abs(pn * scale), 1) < tolerance:
-                    matched = True
-                    break
-            if gn == 0 and abs(pn) < 0.1:
-                matched = True
-                break
-        if matched:
-            matches += 1
-
-    return matches / len(gold_rounded)
+    return result
 
 
 def score_financebench_answer(predicted: str, gold_answer: str, gold_evidence: list[dict]) -> dict:
     """Score predicted answer against FinanceBench gold answer.
 
-    Uses scale-aware numeric extraction (handles million/billion/% units)
-    and approximate matching with tolerance for rounding differences.
+    FinanceBench questions often require specific numeric values.
+    Scoring dimensions:
+    - numeric_match: Do key numbers match?
+    - semantic_overlap: How much gold answer content appears in prediction?
+    - evidence_citation: Does answer reference evidence?
+    - composite: Weighted overall score
     """
     pred_norm = normalize(predicted)
     gold_norm = normalize(gold_answer)
 
-    # Numeric comparison with scale awareness and tolerance
-    pred_nums = extract_numbers(predicted)
-    gold_nums = extract_numbers(gold_answer)
-    numeric_match = _numeric_overlap(pred_nums, gold_nums)
+    # Numeric comparison
+    pred_nums = set(round(n, 2) for n in extract_numbers(predicted))
+    gold_nums = set(round(n, 2) for n in extract_numbers(gold_answer))
+    if gold_nums:
+        numeric_match = len(pred_nums & gold_nums) / len(gold_nums)
+    else:
+        numeric_match = 0.5
 
-    # Semantic overlap
+    # Semantic overlap (simple word-level Jaccard)
     pred_words = set(pred_norm.split())
     gold_words = set(gold_norm.split())
     if gold_words:
@@ -162,12 +110,8 @@ def score_financebench_answer(predicted: str, gold_answer: str, gold_evidence: l
     else:
         overlap = 0.5
 
-    # Key phrase matching (important for qualitative answers)
-    gold_phrases = [p for p in gold_norm.split(",") if len(p.strip()) > 5]
-    phrase_hits = sum(1 for p in gold_phrases if p.strip() in pred_norm) / max(1, len(gold_phrases))
-
     # Composite
-    composite = 0.35 * numeric_match + 0.30 * overlap + 0.20 * phrase_hits + 0.15 * min(1.0, len(predicted) / 100)
+    composite = 0.40 * numeric_match + 0.40 * overlap + 0.20 * min(1.0, len(predicted) / 50)
 
     return {
         "numeric_match": round(numeric_match, 3),
