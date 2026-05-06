@@ -166,7 +166,7 @@ def financebench_results():
         if pdf_path.exists():
             from lattice_jit.connectors.pdf import PdfSnapshotService
             service = PdfSnapshotService(container.repository)
-            service.ingest_structured(tenant_id=BENCHMARK_TENANT, pdf_path=str(pdf_path))
+            service.ingest(tenant_id=BENCHMARK_TENANT, pdf_path=str(pdf_path), page_mode="page")
             ingested_pdfs.add(pdf_name)
 
     # Run queries

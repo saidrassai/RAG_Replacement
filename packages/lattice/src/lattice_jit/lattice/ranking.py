@@ -13,7 +13,7 @@ def rank_nodes_for_query(query: str, nodes: list[KnowledgeNode]) -> list[tuple[K
         node_terms = Counter(_normalize_terms(body))
         node_len = sum(node_terms.values())
         overlap = sum(min(query_terms[term], count) for term, count in node_terms.items()) / max(node_len, 1)
-        score = float(overlap) + node.serving_confidence
+        score = float(overlap)
         if overlap > 0 or node.node_type.value == "source":
             ranked.append((node, score))
     ranked.sort(key=lambda item: item[1], reverse=True)
