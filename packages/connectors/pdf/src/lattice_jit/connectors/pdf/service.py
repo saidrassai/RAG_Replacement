@@ -19,43 +19,59 @@ from lattice_jit.storage import SourceSnapshotRecord, StorageRepository
 
 
 def _format_tables_as_grid(tables: list) -> str:
-    """Convert pdfplumber table lists into readable ASCII grid format."""
+    """Fallback: convert pdfplumber table lists into ASCII grid format."""
     if not tables:
         return ""
     parts = ["\n\n--- TABLES ---"]
     for t_idx, table in enumerate(tables):
         if not table:
             continue
-        # Column widths
         col_widths: list[int] = []
-        for row in table[:30]:  # Cap rows
+        for row in table[:30]:
             for ci, cell in enumerate(row):
                 w = len(str(cell or ""))
                 if ci >= len(col_widths):
                     col_widths.append(w)
                 else:
                     col_widths[ci] = max(col_widths[ci], w)
-        # Ensure minimum width
         col_widths = [max(w, 4) for w in col_widths]
-        # Separator
         sep = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
         parts.append(f"\nTable {t_idx + 1}:")
         parts.append(sep)
-        # Header row
         header = "|" + "|".join(f" {str(c or '').ljust(w)} " for c, w in zip(table[0], col_widths, strict=True)) + "|"
         parts.append(header)
         parts.append(sep)
-        # Data rows
         for row in table[1:30]:
             cells = []
             for ci, cell in enumerate(row):
                 w = col_widths[ci] if ci < len(col_widths) else 8
                 cells.append(f" {str(cell or '').ljust(w)} ")
-            # Pad missing columns
             while len(cells) < len(col_widths):
                 cells.append(f" {'':<{col_widths[len(cells)]}} ")
             parts.append("|" + "|".join(cells) + "|")
         parts.append(sep)
+    return "\n".join(parts)
+
+
+def _format_tables_as_markdown(tables: list) -> str:
+    """Convert pdfplumber table lists into Markdown tables for LLM readability."""
+    if not tables:
+        return ""
+    try:
+        import pandas as pd
+    except ImportError:
+        # Fallback to ASCII grid if pandas unavailable
+        return _format_tables_as_grid(tables)
+    
+    parts = ["\n\n### Extracted Tables"]
+    for t_idx, table in enumerate(tables):
+        if not table or len(table) < 2:
+            continue
+        try:
+            df = pd.DataFrame(table[1:], columns=table[0])
+            parts.append(f"\n**Table {t_idx + 1}:**\n{df.to_markdown(index=False)}")
+        except Exception:
+            parts.append(f"\n**Table {t_idx + 1} (raw):**\n{_format_tables_as_grid([table])}")
     return "\n".join(parts)
 
 
@@ -266,7 +282,7 @@ class PdfSnapshotService:
                     break
 
             parent_node_idx = section_nodes.get(parent_sec, doc_idx)
-            tables_str = _format_tables_as_grid(pd_.get("tables", []))
+            tables_str = _format_tables_as_markdown(pd_.get("tables", []))
             page_text = pd_["text"] + tables_str
             page_node = KnowledgeNode(
                 tenant_id=tenant_id,
