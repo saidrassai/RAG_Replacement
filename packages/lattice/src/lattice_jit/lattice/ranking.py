@@ -23,11 +23,24 @@ def _extract_company_name(query: str) -> str | None:
 
 
 def rank_nodes_for_query(query: str, nodes: list[KnowledgeNode]) -> list[tuple[KnowledgeNode, float]]:
-    """Rank nodes by TF‑IDF with company‑name boosting.
+    """Rank nodes by TF‑IDF with company‑name filtering and boosting.
 
-    Returns nodes sorted by descending score (highest first).
+    If the query mentions a known company, pre-filter to only that company's nodes.
+    Then rank remaining nodes by TF-IDF with company-name boosting.
     """
     query_terms = Counter(_normalize_terms(query))
+    company = _extract_company_name(query)
+
+    # ── Company-name pre-filter: only search the queried company's nodes ─
+    if company:
+        filtered = []
+        for node in nodes:
+            body = f"{node.title}\n{node.body_text or ''}\n{node.source_uri or ''}"
+            if company.lower() in body.lower():
+                filtered.append(node)
+        if filtered:
+            nodes = filtered
+
     N = len(nodes)
 
     # ── Compute IDF across all nodes ──────────────────────────────────
