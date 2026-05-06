@@ -34,9 +34,9 @@ def rank_nodes_for_query(query: str, nodes: list[KnowledgeNode]) -> list[tuple[K
     # ── Company-name pre-filter: only search the queried company's nodes ─
     if company:
         filtered = []
+        cl = company.lower()
         for node in nodes:
-            body = f"{node.title}\n{node.body_text or ''}\n{node.source_uri or ''}"
-            if company.lower() in body.lower():
+            if cl in (node.title or "").lower() or cl in (node.source_uri or "").lower():
                 filtered.append(node)
         if filtered:
             nodes = filtered
