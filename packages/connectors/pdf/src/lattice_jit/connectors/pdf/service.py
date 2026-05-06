@@ -144,8 +144,19 @@ class PdfSnapshotService:
                     self._build_flat_nodes(
                         pdf_file, path, doc_text, pages, snapshot_id, tenant_id, nodes, edges, page_mode
                     )
-            except Exception:
-                continue
+            except Exception as exc:
+                # Fallback: if structured (pdfplumber) failed, try pypdf2
+                if structured and not isinstance(structured, str):
+                    try:
+                        doc_text, pages = self._extract_pdf_pypdf2(pdf_file)
+                        self._build_flat_nodes(
+                            pdf_file, path, doc_text, pages, snapshot_id, tenant_id, nodes, edges, page_mode
+                        )
+                    except Exception:
+                        pass
+                    continue
+                # Non-structured path: don't swallow — re-raise so we see the real error
+                raise RuntimeError(f"Failed to ingest {pdf_file}: {exc}") from exc
 
         self.repository.upsert_nodes(nodes)
         self.repository.upsert_edges(edges)
@@ -354,9 +365,12 @@ class PdfSnapshotService:
     def _extract_pdf_pypdf2(self, pdf_path: Path) -> tuple[str, list[str]]:
         """Legacy extraction using pypdf2."""
         try:
-            from pypdf2 import PdfReader
-        except ImportError as exc:
-            raise RuntimeError("pypdf2 is not installed. Install it with: pip install pypdf2") from exc
+            from PyPDF2 import PdfReader
+        except ImportError:
+            try:
+                from pypdf2 import PdfReader  # older package name
+            except ImportError as exc:
+                raise RuntimeError("pypdf2/PyPDF2 is not installed. Install it with: pip install PyPDF2") from exc
 
         reader = PdfReader(str(pdf_path))
         pages: list[str] = []
