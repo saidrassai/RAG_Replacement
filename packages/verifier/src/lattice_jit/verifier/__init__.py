@@ -21,9 +21,10 @@ _SCORE_TOKENS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G", "H", "I", "
 # Default criteria for finance agent trajectory evaluation.
 _DEFAULT_FINANCE_CRITERIA: tuple[str, ...] = (
     "Correctness: Does the answer match ground truth? Are numbers accurate and properly extracted from cited sources?",
-    "Methodology: Are tools used in the correct order with correct parameters? Is each tool call appropriate for the query?",
-    "Citations: Does every numeric fact cite a source document, page number, and table reference?",
-    "Completeness: Are all parts of the multi-part query answered? If a visualization was requested, was it generated?",
+    "Methodology: Does the agent follow the 5-phase workflow (Plan → Collect → Analyze → Visualize → Verify)? Are tools used in the correct order with correct parameters?",
+    "Citations: Does every numeric fact cite source document, page number, and table reference? Is a complete Sources & References section present? Are any [UNSOURCED] claims flagged?",
+    "Completeness: Are all parts of the multi-part query answered? If a visualization was requested, was it generated with proper labels and data provenance?",
+    "Guardrails: Are the disclaimer, no-automated-execution guardrail, and unsourced-flag rules followed?",
 )
 
 
