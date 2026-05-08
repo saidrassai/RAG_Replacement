@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice-jit-verifier"
+version = "0.1.0"
+description = "LLM-as-a-Verifier: fine-grained trajectory verification for finance agent training"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24",
+    "lattice-jit-contracts",
+]
+
+[project.optional-dependencies]
+litellm = ["litellm>=1.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lattice_jit"]
