@@ -1,4 +1,4 @@
-"""Side-by-side comparison: pdfplumber vs docling on FinanceBench.
+"""Side-by-side comparison: PyMuPDF4LLM vs pdfplumber on FinanceBench.
 
 Runs the same 4 FinanceBench questions through both backends and
 compares accuracy scores.
@@ -58,8 +58,8 @@ def _run_benchmark(backend: str) -> dict:
         pdf_path = PDFS_DIR / pdf_name
         if not pdf_path.exists():
             continue
-        if backend == "docling":
-            service.ingest_docling(tenant_id=tenant, pdf_path=str(pdf_path))
+        if backend == "pymupdf4llm":
+            service.ingest_pymupdf4llm(tenant_id=tenant, pdf_path=str(pdf_path))
         else:
             service.ingest_structured(tenant_id=tenant, pdf_path=str(pdf_path))
         response = container.query_service.run(
@@ -78,29 +78,29 @@ def comparison_results():
     if not DEEPSEEK_KEY:
         pytest.skip("DEEPSEEK_API_KEY not set")
 
+    print("\n--- Running PyMuPDF4LLM ---")
+    pymupdf4llm_results = _run_benchmark("pymupdf4llm")
     print("\n--- Running pdfplumber ---")
     pdfplumber_results = _run_benchmark("pdfplumber")
-    print("\n--- Running docling ---")
-    docling_results = _run_benchmark("docling")
-    return {"pdfplumber": pdfplumber_results, "docling": docling_results}
+    return {"pymupdf4llm": pymupdf4llm_results, "pdfplumber": pdfplumber_results}
 
 
 class TestBackendComparison:
     def test_comparison_summary(self, comparison_results: dict) -> None:
+        mr = comparison_results["pymupdf4llm"]
         pr = comparison_results["pdfplumber"]
-        dr = comparison_results["docling"]
         print("\n" + "=" * 70)
-        print("PDF BACKEND COMPARISON — DeepSeek v4")
+        print("CPU PDF BACKEND COMPARISON — DeepSeek v4")
         print("=" * 70)
         print(f"{'Backend':<15} {'Gold Hits':>10} {'Total':>6} {'Rate':>8}")
         print("-" * 45)
+        print(f"{'pymupdf4llm':<15} {mr['hits']:>10} {mr['total']:>6} {mr['hits']/mr['total']:>7.0%}")
         print(f"{'pdfplumber':<15} {pr['hits']:>10} {pr['total']:>6} {pr['hits']/pr['total']:>7.0%}")
-        print(f"{'docling':<15} {dr['hits']:>10} {dr['total']:>6} {dr['hits']/dr['total']:>7.0%}")
         print("-" * 45)
         print("\nPer-question breakdown:")
-        for i, (pq, dq) in enumerate(zip(pr["details"], dr["details"], strict=True)):
+        for i, (mq, pq) in enumerate(zip(mr["details"], pr["details"], strict=True)):
             print(f"  Q{i+1}: {pq['question'][:70]}")
-            print(f"    pdfplumber: {'HIT' if pq['gold_hit'] else 'MISS'} | {pq['answer_snippet'][:120]}")
-            print(f"    docling:    {'HIT' if dq['gold_hit'] else 'MISS'} | {dq['answer_snippet'][:120]}")
+            print(f"    pymupdf4llm: {'HIT' if mq['gold_hit'] else 'MISS'} | {mq['answer_snippet'][:120]}")
+            print(f"    pdfplumber:   {'HIT' if pq['gold_hit'] else 'MISS'} | {pq['answer_snippet'][:120]}")
             print()
         print("=" * 70)

@@ -2,6 +2,10 @@
 
 Python-first modular monorepo scaffold for the first vertical slice of the Lattice-JIT architecture.
 
+## Project framing
+
+Lattice-JIT is a CPU-first enterprise RAG runtime prototype. It focuses on policy-enforced context compilation, provenance, human review, auditability, and document ingestion rather than unsupported accuracy claims.
+
 ## Workspace
 
 - `apps/api`: FastAPI surface
@@ -10,6 +14,21 @@ Python-first modular monorepo scaffold for the first vertical slice of the Latti
 - `packages/*`: shared contracts and domain packages
 - `ops/docker`: local-first Docker assets
 - `ops/opa`: policy bundle scaffold
+
+## CPU-first document parsing
+
+The default PDF ingestion path is `pymupdf4llm`, which produces Markdown page chunks suitable for RAG and works on CPU-only machines. `pdfplumber` remains available for table-heavy extraction, and `pypdf2` remains as the legacy fallback. Docling is intentionally optional because it pulls a heavy OCR/CV dependency chain and is not needed for normal tests.
+
+Parser modes accepted by API/CLI `page_mode`:
+
+- `pymupdf4llm` / `markdown` / `cpu` — default CPU Markdown parser
+- `pdfplumber` / `structured` — table-preserving structured parser
+- `page` / `document` — legacy `pypdf2` extraction modes
+- `docling` — optional heavy backend, installed only through the PDF connector's Docling extra
+
+## Production readiness
+
+- Enterprise production-readiness blueprint: `docs/plans/enterprise-production-readiness-blueprint.md`
 
 ## Quick start
 

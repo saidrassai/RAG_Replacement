@@ -7,7 +7,6 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-  "docling",
   "fakeredis>=2.31.0",
   "httpx>=0.28.1",
   "model2vec>=0.8.1",
@@ -132,6 +131,7 @@ module = [
   "openpyxl",
   "pypdf2",
   "pdfplumber",
+  "pymupdf4llm",
   "python-docx",
   "python-pptx",
   "requests",

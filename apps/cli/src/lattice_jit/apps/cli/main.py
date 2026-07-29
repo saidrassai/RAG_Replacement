@@ -58,12 +58,16 @@ def ingest_git(
 def ingest_pdf(
     tenant_id: UUID = typer.Option(...),
     pdf_path: str = typer.Option(...),
-    page_mode: str = typer.Option("document"),
+    page_mode: str = typer.Option("pymupdf4llm"),
 ) -> None:
     try:
         from lattice_jit.connectors.pdf import PdfSnapshotService
     except ImportError as exc:
-        typer.echo("pypdf2 is not installed. Install it with: pip install pypdf2", err=True)
+        typer.echo(
+            "PDF connector dependencies are not installed. "
+            "Install the package or use the optional docling extra only when needed.",
+            err=True,
+        )
         raise typer.Exit(code=1) from exc
     container = get_container()
     service = PdfSnapshotService(container.repository)

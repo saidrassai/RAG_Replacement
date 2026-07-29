@@ -94,12 +94,24 @@ class PdfSnapshotService:
     # ── Original pypdf2 ingestion (backward compatible) ─────────────────
 
     def ingest(self, *, tenant_id: UUID, pdf_path: str, page_mode: str = "document") -> SnapshotResponse:
+        normalized_mode = page_mode.strip().lower()
+        if normalized_mode in {"pymupdf4llm", "markdown", "cpu"}:
+            return self.ingest_pymupdf4llm(tenant_id=tenant_id, pdf_path=pdf_path)
+        if normalized_mode in {"structured", "pdfplumber"}:
+            return self.ingest_structured(tenant_id=tenant_id, pdf_path=pdf_path)
+        if normalized_mode == "docling":
+            return self.ingest_docling(tenant_id=tenant_id, pdf_path=pdf_path)
         return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode=page_mode, structured=False)
 
     # ── Structured pdfplumber ingestion (table-preserving, section hierarchy) ─
 
     def ingest_structured(self, *, tenant_id: UUID, pdf_path: str) -> SnapshotResponse:
         return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode="page", structured=True)
+
+    # ── CPU-first PyMuPDF4LLM ingestion (Markdown/page chunks) ───────────
+
+    def ingest_pymupdf4llm(self, *, tenant_id: UUID, pdf_path: str) -> SnapshotResponse:
+        return self._ingest_impl(tenant_id=tenant_id, pdf_path=pdf_path, page_mode="page", structured="pymupdf4llm")
 
     def ingest_docling(self, *, tenant_id: UUID, pdf_path: str) -> SnapshotResponse:
         """Ingest using IBM Docling for layout-aware extraction."""
@@ -151,7 +163,9 @@ class PdfSnapshotService:
 
         for pdf_file in pdf_files:
             try:
-                if structured == "docling":
+                if structured == "pymupdf4llm":
+                    self._ingest_pymupdf4llm_pdf(pdf_file, path, snapshot_id, tenant_id, nodes, edges)
+                elif structured == "docling":
                     self._ingest_docling_pdf(pdf_file, path, snapshot_id, tenant_id, nodes, edges)
                 elif structured:
                     self._ingest_structured_pdf(pdf_file, path, snapshot_id, tenant_id, nodes, edges)
@@ -325,6 +339,59 @@ class PdfSnapshotService:
                 })
         return pages_data
 
+    def _ingest_pymupdf4llm_pdf(
+        self, pdf_file: Path, base_path: Path, snapshot_id: UUID,
+        tenant_id: UUID, nodes: list[KnowledgeNode], edges: list[KnowledgeEdge],
+    ) -> None:
+        """Ingest PDF using PyMuPDF4LLM Markdown chunks on CPU."""
+        pages_data = self._extract_pdf_pymupdf4llm(pdf_file)
+        if not pages_data:
+            return
+
+        source_uri = str(pdf_file)
+        doc_node = KnowledgeNode(
+            tenant_id=tenant_id,
+            snapshot_id=snapshot_id,
+            node_type=NodeType.SOURCE,
+            title=pdf_file.name,
+            source_uri=source_uri,
+            body_ptr=str(pdf_file.relative_to(base_path.parent if base_path.is_dir() else base_path.parent)),
+            body_text="\n\n".join(page["text"] for page in pages_data)[:3000],
+            content_hash=stable_hash(source_uri, "pymupdf4llm", pages_data[0]["text"][:2000]),
+            source_confidence=1.0,
+            serving_confidence=1.0,
+            metadata={"extractor": "pymupdf4llm", "format": "markdown"},
+        )
+        nodes.append(doc_node)
+        edges.append(KnowledgeEdge(
+            tenant_id=tenant_id, from_node_id=doc_node.node_id,
+            to_node_id=nodes[0].node_id, edge_type=EdgeType.BELONGS_TO,
+            evidence_spans=[{"path": source_uri, "extractor": "pymupdf4llm"}],
+        ))
+
+        for page in pages_data:
+            page_num = int(page["page"])
+            page_text = page["text"]
+            page_node = KnowledgeNode(
+                tenant_id=tenant_id,
+                snapshot_id=snapshot_id,
+                node_type=NodeType.SECTION,
+                title=f"{pdf_file.name} -- page {page_num} [PyMuPDF4LLM]",
+                source_uri=f"{source_uri}#page={page_num}",
+                body_ptr=f"{pdf_file.name}#pymupdf4llm-page={page_num}",
+                body_text=page_text,
+                content_hash=stable_hash(source_uri, "pymupdf4llm", str(page_num), page_text[:500]),
+                source_confidence=1.0,
+                serving_confidence=1.0,
+                metadata={"page": page_num, "extractor": "pymupdf4llm", "format": "markdown"},
+            )
+            nodes.append(page_node)
+            edges.append(KnowledgeEdge(
+                tenant_id=tenant_id, from_node_id=page_node.node_id,
+                to_node_id=doc_node.node_id, edge_type=EdgeType.BELONGS_TO,
+                evidence_spans=[{"path": source_uri, "page": page_num, "extractor": "pymupdf4llm"}],
+            ))
+
     def _ingest_docling_pdf(
         self, pdf_file: Path, base_path: Path, snapshot_id: UUID,
         tenant_id: UUID, nodes: list[KnowledgeNode], edges: list[KnowledgeEdge],
@@ -365,6 +432,47 @@ class PdfSnapshotService:
         ))
 
     # ── PDF Extraction Backends ──────────────────────────────────────────
+
+    def _extract_pdf_pymupdf4llm(self, pdf_path: Path) -> list[dict]:
+        """Extract Markdown page chunks with PyMuPDF4LLM.
+
+        PyMuPDF4LLM is the default CPU-friendly parser for RAG tests. It avoids
+        the Docling/Torch/OCR dependency chain while preserving Markdown useful
+        for chunking and citation snippets.
+        """
+        try:
+            import pymupdf4llm
+        except ImportError as exc:
+            raise RuntimeError("pymupdf4llm is not installed. Install it with: pip install pymupdf4llm") from exc
+
+        try:
+            chunks = pymupdf4llm.to_markdown(str(pdf_path), page_chunks=True, show_progress=False)
+        except TypeError:
+            chunks = pymupdf4llm.to_markdown(str(pdf_path), page_chunks=True)
+
+        if isinstance(chunks, str):
+            text = chunks.strip()
+            return [{"page": 1, "text": text, "tables": []}] if text else []
+
+        pages_data: list[dict] = []
+        for idx, chunk in enumerate(chunks, start=1):
+            if isinstance(chunk, dict):
+                text_obj = chunk.get("text") or chunk.get("md") or chunk.get("content") or ""
+                text = str(text_obj).strip()
+                metadata = chunk.get("metadata") if isinstance(chunk.get("metadata"), dict) else {}
+                page_raw = chunk.get("page") or metadata.get("page") or metadata.get("page_number")
+                page_num = idx
+                if isinstance(page_raw, int) and page_raw >= 1:
+                    page_num = page_raw
+                elif isinstance(page_raw, str) and page_raw.isdigit() and int(page_raw) >= 1:
+                    page_num = int(page_raw)
+            else:
+                text = str(chunk).strip()
+                page_num = idx
+            if text:
+                pages_data.append({"page": page_num, "text": text, "tables": []})
+
+        return pages_data
 
     def _extract_pdf_docling(self, pdf_path: Path) -> list[dict]:
         """Extract PDF with IBM Docling — one page node with full markdown + table structure."""

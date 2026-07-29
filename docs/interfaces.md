@@ -33,6 +33,16 @@ Response (`SnapshotResponse`):
 
 `status` is a `SnapshotStatus` enum: `pending`, `completed`, or `failed`.
 
+### `POST /v1/snapshots/pdf`
+
+Multipart form fields:
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `tenant_id` | UUID | required | Tenant identifier |
+| `pdf_path` | string | required | Local PDF file or directory |
+| `page_mode` | string | `pymupdf4llm` | Parser/mode: `pymupdf4llm`, `markdown`, `cpu`, `pdfplumber`, `structured`, `page`, `document`, or optional `docling` |
+
 ### `POST /v1/queries`
 
 Request body:

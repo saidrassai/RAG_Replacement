@@ -10,7 +10,13 @@ dependencies = [
   "lattice-jit-contracts",
   "lattice-jit-core",
   "pdfplumber>=0.11.0",
+  "pymupdf4llm>=0.0.17",
   "pypdf2>=3.0.0",
+]
+
+[project.optional-dependencies]
+docling = [
+  "docling",
 ]
 
 [tool.setuptools]

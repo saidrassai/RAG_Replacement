@@ -241,7 +241,11 @@ def score_hallucination(answer_text: str, question: FinanceQuestion) -> float:
     if not question.forbidden_claims:
         return 1.0
 
-    answer_lower = answer_text.lower()
+    claim_text = "\n".join(
+        line for line in answer_text.splitlines()
+        if not line.lower().startswith("query:")
+    )
+    answer_lower = claim_text.lower()
     denial_markers = (
         "not available", "cannot find", "not contain", "no information",
         "does not contain", "not in the", "not provided", "not found",

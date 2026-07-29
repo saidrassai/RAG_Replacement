@@ -92,7 +92,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def create_pdf_snapshot(
         tenant_id: UUID = Form(...),
         pdf_path: str = Form(...),
-        page_mode: str = Form("document"),
+        page_mode: str = Form("pymupdf4llm"),
         container: AppContainer = Depends(get_container),
     ) -> SnapshotResponse:
         service = PdfSnapshotService(container.repository)
